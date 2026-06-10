@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omset Analytics — Dashboard Penjualan Laptop 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Decoration -->
+    <div class="bg-decoration">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1"/>
+                            <stop offset="100%" style="stop-color:#ec4899"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M3 3v18h18"/>
+                    <path d="M7 16l4-8 4 4 6-12"/>
+                </svg>
+            </div>
+            <div class="spinner"></div>
+            <h3>Memuat Data Analytics</h3>
+            <p id="loadingStatus">Menghubungkan ke Google Sheets...</p>
+            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+            <p id="loadingDetail" class="loading-detail"></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sticky-top-group">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-brand">
+                <div class="brand-text">
+                    <h1>Laptop Analytics</h1>
+                    <p class="subtitle">Dashboard Penjualan Laptop · Multi-Kota Indonesia</p>
+                </div>
+                <img src="logo.png" alt="ELS.ID Logo" class="logo-img">
+            </div>
+            <div class="header-actions">
+                <span id="cacheStatus" class="cache-status-wrap" title="Status cache per tahun"></span>
+                <span id="lastUpdate" class="last-update">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span id="lastUpdateText">-</span>
+                </span>
+                <button id="btnRefresh" class="btn-glass" title="Refresh data 2026 (gunakan cache untuk 2024 & 2025)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    Refresh
+                </button>
+                <button id="btnForceRefresh" class="btn-glass btn-force" title="Hapus semua cache & unduh ulang semua tahun (untuk update data 2024/2025)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Clear Cache
+                </button>
+            </div>
+        </header>
+
+        <!-- Filters -->
+        <section class="filters-section">
+            <div class="filters-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </div>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label>Tahun</label>
+                    <select id="filterTahun"><option value="all">Semua Tahun</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Bulan</label>
+                    <select id="filterBulan"><option value="all">Semua Bulan</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Kota</label>
+                    <select id="filterKota"><option value="all">Semua Kota</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Brand</label>
+                    <select id="filterBrand"><option value="all">Semua Brand</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Kategori</label>
+                    <select id="filterKategori">
+                        <option value="all">Semua</option>
+                        <option value="GAMING">Gaming</option>
+                        <option value="NON GAMING">Non Gaming</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Divisi</label>
+                    <select id="filterDivisi"><option value="all">Semua Divisi</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Prosesor</label>
+                    <select id="filterProc">
+                        <option value="all">Semua</option>
+                        <option value="Intel">Intel</option>
+                        <option value="Amd">AMD</option>
+                    </select>
+                </div>
+            </div>
+            <button id="btnReset" class="btn-reset">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                Reset
+            </button>
+        </section>
+
+        <!-- Main Navigation Tabs -->
+        <nav class="main-nav-tabs">
+            <button class="main-tab active" data-tab="tabTahunan">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 6-12"/></svg>
+                Analisa Tahunan
+            </button>
+            <button class="main-tab" data-tab="tabBulanan">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Analisa Bulanan
+            </button>
+        </nav>
+        </div><!-- /sticky-top-group -->
+
+        <!-- Tab Content: Analisa Tahunan -->
+        <div id="tabTahunan" class="tab-content active">
+
+
+
+        <!-- YoY Comparison Section -->
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <h3>Trend Penjualan Bulanan — Year over Year</h3>
+                        <p class="chart-subtitle">Perbandingan unit terjual per bulan: 2024 vs 2025 vs 2026</p>
+                    </div>
+                    <span class="chart-tag tag-blue">YoY · Trend</span>
+                </div>
+                <canvas id="chartTrend"></canvas>
+            </div>
+        </section>
+
+        <!-- Marketshare Table -->
+        <section class="table-section marketshare-section">
+            <div class="table-header">
+                <div>
+                    <h3>Marketshare per Brand — Detail Bulanan</h3>
+                    <p class="chart-subtitle">Growth, MoM, YoY, dan estimasi closing per brand. Pilih kategori di tab.</p>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-cat="all">Semua</button>
+                    <button class="tab-btn" data-cat="GAMING">Gaming</button>
+                    <button class="tab-btn" data-cat="NON GAMING">Non Gaming</button>
+                </div>
+            </div>
+            <div class="ms-year-info" id="msYearInfo"></div>
+            <div class="table-wrapper ms-table-wrap">
+                <table id="marketshareTable" class="ms-table">
+                    <thead id="msTableHead"></thead>
+                    <tbody id="msTableBody"></tbody>
+                    <tfoot id="msTableFoot"></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <h3>Revenue Bulanan — Year over Year</h3>
+                        <p class="chart-subtitle">Perbandingan revenue (Juta IDR) per bulan antar tahun</p>
+                    </div>
+                    <span class="chart-tag tag-green">YoY · Revenue</span>
+                </div>
+                <canvas id="chartYoYRevenue"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Top 8 Brand — Year over Year</h3>
+                        <p class="chart-subtitle">Performa brand antar tahun</p>
+                    </div>
+                    <span class="chart-tag tag-purple">YoY · Brand</span>
+                </div>
+                <canvas id="chartYoYBrand"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Penjualan per Kota — Year over Year</h3>
+                        <p class="chart-subtitle">Performa cabang antar tahun</p>
+                    </div>
+                    <span class="chart-tag tag-cyan">YoY · Geo</span>
+                </div>
+                <canvas id="chartYoYKota"></canvas>
+            </div>
+        </section>
+
+        <!-- Charts Row -->
+        <section class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Penjualan per Brand</h3>
+                        <p class="chart-subtitle">Top brand berdasarkan unit terjual</p>
+                    </div>
+                    <span class="chart-tag tag-purple">Brand</span>
+                </div>
+                <canvas id="chartBrand"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Penjualan per Kota</h3>
+                        <p class="chart-subtitle">Distribusi geografis penjualan</p>
+                    </div>
+                    <span class="chart-tag tag-green">Geo</span>
+                </div>
+                <canvas id="chartKota"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Gaming vs Non Gaming</h3>
+                        <p class="chart-subtitle">Distribusi kategori produk</p>
+                    </div>
+                    <span class="chart-tag tag-pink">Segment</span>
+                </div>
+                <canvas id="chartGaming"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Distribusi Range Harga</h3>
+                        <p class="chart-subtitle">Segmentasi penjualan per range harga</p>
+                    </div>
+                    <span class="chart-tag tag-amber">Price</span>
+                </div>
+                <canvas id="chartHarga"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Intel vs AMD</h3>
+                        <p class="chart-subtitle">Pangsa pasar prosesor</p>
+                    </div>
+                    <span class="chart-tag tag-blue">Tech</span>
+                </div>
+                <canvas id="chartProc"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Distribusi Divisi</h3>
+                        <p class="chart-subtitle">Channel penjualan per divisi</p>
+                    </div>
+                    <span class="chart-tag tag-cyan">Channel</span>
+                </div>
+                <canvas id="chartDivisi"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <h3>Marketshare Brand Processor per Bulan</h3>
+                        <p class="chart-subtitle">Komposisi Intel, AMD, Apple, Snapdragon (100% stacked)</p>
+                    </div>
+                    <div class="chart-header-right">
+                        <div class="chart-tabs">
+                            <button class="chart-tab-btn active" data-proc-cat="all">Semua</button>
+                            <button class="chart-tab-btn" data-proc-cat="GAMING">Gaming</button>
+                            <button class="chart-tab-btn" data-proc-cat="NON GAMING">Non Gaming</button>
+                        </div>
+                        <span class="chart-tag tag-blue">Processor</span>
+                    </div>
+                </div>
+                <canvas id="chartProcStacked"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Top 15 Sales Performance</h3>
+                        <p class="chart-subtitle">Berdasarkan revenue (Juta IDR)</p>
+                    </div>
+                    <span class="chart-tag tag-amber">Sales</span>
+                </div>
+                <canvas id="chartSales"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <h3>Penjualan per Seri Prosesor</h3>
+                        <p class="chart-subtitle">Distribusi seri chip</p>
+                    </div>
+                    <span class="chart-tag tag-purple">Tech</span>
+                </div>
+                <canvas id="chartSeriProc"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <h3>Revenue per Brand</h3>
+                        <p class="chart-subtitle">Total revenue dalam Jutaan IDR per brand</p>
+                    </div>
+                    <span class="chart-tag tag-green">Revenue</span>
+                </div>
+                <canvas id="chartRevenueBrand"></canvas>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <div>
+                        <h3>Top 15 Produk Terlaris</h3>
+                        <p class="chart-subtitle">Best-selling SKUs berdasarkan jumlah unit</p>
+                    </div>
+                    <div class="top-prod-filters">
+                        <div class="top-prod-category-tabs">
+                            <button class="top-prod-cat-btn active" data-top-prod-cat="all">Semua</button>
+                            <button class="top-prod-cat-btn" data-top-prod-cat="GAMING">Gaming</button>
+                            <button class="top-prod-cat-btn" data-top-prod-cat="NON GAMING">Non Gaming</button>
+                        </div>
+                        <select id="filterTopProdProc" class="top-prod-select">
+                            <option value="all">Semua Proc</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas id="chartTopProducts"></canvas>
+            </div>
+        </section>
+
+
+
+        </div><!-- /tabTahunan -->
+
+        <!-- Tab Content: Analisa Bulanan -->
+        <div id="tabBulanan" class="tab-content">
+
+        <!-- Monthly Analysis Section - Processor per Kota -->
+        <section class="table-section marketshare-section monthly-analysis-section">
+            <div class="table-header">
+                <div>
+                    <h3>Analisa Bulanan — Processor per Kota</h3>
+                    <p class="chart-subtitle">Marketshare prosesor per kota, dengan perbandingan MoM dan YoY. Filter bulan independen.</p>
+                </div>
+                <div class="monthly-filter-wrap">
+                    <div class="monthly-category-tabs">
+                        <button class="monthly-cat-btn active" data-monthly-cat="all">Semua</button>
+                        <button class="monthly-cat-btn" data-monthly-cat="GAMING">Gaming</button>
+                        <button class="monthly-cat-btn" data-monthly-cat="NON GAMING">Non Gaming</button>
+                    </div>
+                    <div class="filter-group monthly-filter-group">
+                        <label>Bulan</label>
+                        <select id="filterBulanMonthly">
+                            <option value="Jan">Jan</option>
+                            <option value="Feb">Feb</option>
+                            <option value="Mar">Mar</option>
+                            <option value="Apr">Apr</option>
+                            <option value="Mei">Mei</option>
+                            <option value="Jun">Jun</option>
+                            <option value="Jul">Jul</option>
+                            <option value="Agu">Agu</option>
+                            <option value="Sep">Sep</option>
+                            <option value="Okt">Okt</option>
+                            <option value="Nov">Nov</option>
+                            <option value="Des">Des</option>
+                        </select>
+                    </div>
+                    <div class="filter-group monthly-filter-group">
+                        <label>Tahun</label>
+                        <select id="filterTahunMonthly">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table 0: Penjualan per Brand & Kota -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Penjualan per Brand &amp; Kota</h4>
+                    <p class="chart-subtitle">QTY dan % per brand per kota, dengan YoY comparison.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoBrand"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableBrand" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadBrand"></thead>
+                        <tbody id="monthlyTableBodyBrand"></tbody>
+                        <tfoot id="monthlyTableFootBrand"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 1: Seri Proc 2 (kolom W) x Kota -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Seri Prosesor 2 (Kolom W) per Kota</h4>
+                    <p class="chart-subtitle">Group: Core i7/Core 7/Ultra 7, Ryzen 5/Ryzen AI 5, dll.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoW"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableW" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadW"></thead>
+                        <tbody id="monthlyTableBodyW"></tbody>
+                        <tfoot id="monthlyTableFootW"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 2: Seri Proc (kolom V) x Kota -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Seri Prosesor (Kolom V) per Kota</h4>
+                    <p class="chart-subtitle">Group: Core i7, Core i5, Ryzen 5, Ultra 5, dll.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoV"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableV" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadV"></thead>
+                        <tbody id="monthlyTableBodyV"></tbody>
+                        <tfoot id="monthlyTableFootV"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        </div><!-- /tabBulanan -->
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <strong>Omset Analytics</strong>
+                    <span>·</span>
+                    <span>Live Data dari Google Sheets</span>
+                </div>
+                <div class="footer-meta">
+                    <span>&copy; 2026</span>
+                    <span>·</span>
+                    <span>Crafted with Chart.js & PapaParse</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
