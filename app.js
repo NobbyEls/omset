@@ -1733,11 +1733,11 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
         const cur = curKotaTotals[kota];
         const prev = yoyKotaTotals[kota];
         const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
-        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br><small>${formatNumber(prev)}</small></td>`;
+        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br>${formatNumber(prev)}</td>`;
         bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
     });
     const totalYoy = yoyGrandTotal > 0 ? ((curGrandTotal - yoyGrandTotal) / yoyGrandTotal) * 100 : null;
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><small>${formatNumber(yoyGrandTotal)}</small></td>`;
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><strong>${formatNumber(yoyGrandTotal)}</strong></td>`;
     bodyHtml += `<td class="ms-yoy-cell">${totalYoy !== null ? formatGrowthCell(totalYoy) : '<span class="trend-neutral">-</span>'}</td>`;
     bodyHtml += `</tr>`;
 
@@ -1986,11 +1986,11 @@ function renderMonthlyBrandTable(config) {
         const cur = curBrandTotals[brand];
         const prev = yoyBrandTotals[brand];
         const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
-        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br><small>${formatNumber(prev)}</small></td>`;
+        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br>${formatNumber(prev)}</td>`;
         bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
     });
     const totalYoy = yoyGrandTotal > 0 ? ((curGrandTotal - yoyGrandTotal) / yoyGrandTotal) * 100 : null;
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><small>${formatNumber(yoyGrandTotal)}</small></td>`;
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><strong>${formatNumber(yoyGrandTotal)}</strong></td>`;
     bodyHtml += `<td class="ms-yoy-cell">${totalYoy !== null ? formatGrowthCell(totalYoy) : '<span class="trend-neutral">-</span>'}</td>`;
     bodyHtml += `</tr>`;
 

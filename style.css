@@ -1705,3 +1705,18 @@ td.nama-barang {
     white-space: normal !important;
     line-height: 1.2;
 }
+
+
+/* Analisa Bulanan: tighten gap below nav + freeze filter header */
+.monthly-analysis-section { margin-top: 16px; }
+.monthly-analysis-section .table-header {
+    position: sticky;
+    top: 138px; /* approx header + nav height; tune if needed */
+    z-index: 80;
+    margin-bottom: 0;
+    padding: 12px 0;
+    background: rgba(15, 20, 36, 0.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-medium);
+}
