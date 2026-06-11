@@ -1458,9 +1458,10 @@ td.nama-barang {
     white-space: nowrap !important;
 }
 
-/* Override ms-table-wrap for monthly: no overflow scroll */
+/* Monthly tables can be wide (esp. proc x brand). Allow horizontal
+   scroll so larger fonts never clip the rightmost (TOTAL) columns. */
 .monthly-analysis-section .ms-table-wrap {
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .ms-yoy-row {
@@ -1657,4 +1658,25 @@ td.nama-barang {
     font-family: 'Roboto Mono', 'Courier New', monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
+}
+
+
+/* ------------------------------------------------------------
+   Analisa Bulanan tables: larger, more comfortable font sizes.
+   Scoped via .monthly-kota-table so the Analisa Tahunan
+   marketshare table is left unchanged. Sizes tuned for 100% zoom.
+   ------------------------------------------------------------ */
+.ms-table.monthly-kota-table thead th {
+    font-size: 0.86rem;
+    padding: 11px 10px;
+}
+.ms-table.monthly-kota-table thead th small {
+    font-size: 0.74rem;
+}
+.ms-table.monthly-kota-table tbody td {
+    font-size: 0.95rem;
+    padding: 10px 10px;
+}
+.ms-table.monthly-kota-table tbody td small {
+    font-size: 0.82rem;
 }
