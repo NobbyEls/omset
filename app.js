@@ -1553,10 +1553,15 @@ function renderMarketshareTableGeneric(config) {
 }
 
 // =========================================================
-// MONTHLY ANALYSIS - Processor per Kota (MoM & YoY)
+// MONTHLY ANALYSIS - Processor per Brand (MoM & YoY)
 // =========================================================
 
-const KOTA_LIST = ['YGY', 'SLO', 'PWT', 'SMG', 'TGL', 'BBS', 'MDN'];
+// Laptop brands shown as columns; anything outside ALLOWED_BRANDS rolls up into OTHER
+const BRAND_LIST = ['ASUS', 'LENOVO', 'ACER', 'APPLE', 'AXIOO', 'ADVAN', 'HP', 'MSI', 'OTHER'];
+
+function getBrandGroup(brand) {
+    return ALLOWED_BRANDS.includes(brand) ? brand : 'OTHER';
+}
 
 function initMonthlyFilter() {
     // Set default to latest month with data in latest year
@@ -1578,8 +1583,7 @@ function getSelectedMonthlyFilter() {
 
 function renderMonthlyAnalysis() {
     const { bulan, tahun } = getSelectedMonthlyFilter();
-    renderMonthlyBrandKotaTable(bulan, tahun);
-    renderMonthlyKotaTable({
+    renderMonthlyBrandTable({
         groupField: 'seriProc2',
         label: 'Seri Proc 2',
         bulan, tahun,
@@ -1590,7 +1594,7 @@ function renderMonthlyAnalysis() {
             foot: 'monthlyTableFootW'
         }
     });
-    renderMonthlyKotaTable({
+    renderMonthlyBrandTable({
         groupField: 'seriProc',
         label: 'Seri Proc',
         bulan, tahun,
@@ -1603,151 +1607,7 @@ function renderMonthlyAnalysis() {
     });
 }
 
-function renderMonthlyBrandKotaTable(bulan, tahun) {
-    const prevYear = tahun - 1;
-
-    // Info bar
-    const infoEl = document.getElementById('monthlyInfoBrand');
-    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · YoY vs <strong>${bulan} ${prevYear}</strong>`;
-
-    // Current month data
-    const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
-    // Same month previous year (for YoY)
-    const yoyData = allData.filter(d => d.tahun === prevYear && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
-
-    const BRAND_LIST = ['ASUS', 'LENOVO', 'ACER', 'APPLE', 'AXIOO', 'ADVAN', 'HP', 'MSI', 'OTHER'];
-
-    function getBrandGroup(brand) {
-        if (ALLOWED_BRANDS.includes(brand)) return brand;
-        return 'OTHER';
-    }
-
-    // Build qty matrices: brand x kota
-    function buildBrandMatrix(data) {
-        const mx = {};
-        BRAND_LIST.forEach(b => {
-            mx[b] = {};
-            KOTA_LIST.forEach(k => mx[b][k] = 0);
-        });
-        data.forEach(d => {
-            const b = getBrandGroup(d.brand);
-            if (mx[b] && KOTA_LIST.includes(d.cekKota)) {
-                mx[b][d.cekKota] += d.qty;
-            }
-        });
-        return mx;
-    }
-
-    const curMatrix = buildBrandMatrix(curData);
-    const yoyMatrix = buildBrandMatrix(yoyData);
-
-    // Grand totals per kota
-    const curKotaTotals = {};
-    const yoyKotaTotals = {};
-    KOTA_LIST.forEach(k => {
-        curKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + curMatrix[b][k], 0);
-        yoyKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + yoyMatrix[b][k], 0);
-    });
-
-    const curGrandTotal = KOTA_LIST.reduce((s, k) => s + curKotaTotals[k], 0);
-    const yoyGrandTotal = KOTA_LIST.reduce((s, k) => s + yoyKotaTotals[k], 0);
-
-    // HEAD
-    const head = document.getElementById('monthlyTableHeadBrand');
-    head.innerHTML = `
-        <tr class="ms-head-1">
-            <th rowspan="2" class="ms-bulan">Brand</th>
-            ${KOTA_LIST.map(k => `<th colspan="2" class="ms-kota-header">${k}</th>`).join('')}
-            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
-        </tr>
-        <tr class="ms-head-2">
-            ${KOTA_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
-            <th>QTY</th><th>%</th>
-        </tr>
-    `;
-
-    // BODY
-    const body = document.getElementById('monthlyTableBodyBrand');
-    let bodyHtml = '';
-
-    // Pre-compute all % values for color scale (data rows only)
-    const allPctsBrand = [];
-    BRAND_LIST.forEach(brand => {
-        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
-        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
-        if (rowPct > 0) allPctsBrand.push(rowPct);
-        KOTA_LIST.forEach(kota => {
-            const qty = curMatrix[brand][kota];
-            const kotaTotal = curKotaTotals[kota];
-            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
-            if (pct > 0) allPctsBrand.push(pct);
-        });
-    });
-    const maxPctBrand = allPctsBrand.length > 0 ? Math.max(...allPctsBrand) : 1;
-
-    function pctBgStyle(pct) {
-        if (pct <= 0) return '';
-        const intensity = (pct / maxPctBrand) * 0.4;
-        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
-    }
-
-    BRAND_LIST.forEach(brand => {
-        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
-        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
-
-        bodyHtml += `<tr>`;
-        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(brand)}</strong></td>`;
-
-        KOTA_LIST.forEach(kota => {
-            const qty = curMatrix[brand][kota];
-            const kotaTotal = curKotaTotals[kota];
-            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
-            bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
-            bodyHtml += `<td class="ms-pct-white"${pctBgStyle(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
-        });
-
-        // Total column
-        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(rowTotal)}</strong></td>`;
-        bodyHtml += `<td class="ms-pct-white"${pctBgStyle(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
-        bodyHtml += `</tr>`;
-    });
-
-    // Total row (above YoY)
-    bodyHtml += `<tr class="ms-grand-row">`;
-    bodyHtml += `<td><strong>Total</strong></td>`;
-    KOTA_LIST.forEach(kota => {
-        const qty = curKotaTotals[kota];
-        const pct = curGrandTotal > 0 ? (qty / curGrandTotal) * 100 : 0;
-        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
-        bodyHtml += `<td class="ms-pct-white"><strong>${pct.toFixed(1)}%</strong></td>`;
-    });
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong></td>`;
-    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
-    bodyHtml += `</tr>`;
-
-    // YoY row
-    bodyHtml += `<tr class="ms-yoy-row">`;
-    bodyHtml += `<td class="ms-bulan-cell"><strong>YoY</strong><br><small>${bulan} ${tahun} vs ${bulan} ${prevYear}</small></td>`;
-    KOTA_LIST.forEach(kota => {
-        const cur = curKotaTotals[kota];
-        const prev = yoyKotaTotals[kota];
-        const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
-        bodyHtml += `<td class="ms-qty">${formatNumber(cur)} <small>vs ${formatNumber(prev)}</small></td>`;
-        bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
-    });
-    const totalYoy = yoyGrandTotal > 0 ? ((curGrandTotal - yoyGrandTotal) / yoyGrandTotal) * 100 : null;
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong> <small>vs ${formatNumber(yoyGrandTotal)}</small></td>`;
-    bodyHtml += `<td class="ms-yoy-cell">${totalYoy !== null ? formatGrowthCell(totalYoy) : '<span class="trend-neutral">-</span>'}</td>`;
-    bodyHtml += `</tr>`;
-
-    body.innerHTML = bodyHtml;
-
-    // FOOTER (empty now - total moved to body)
-    const foot = document.getElementById('monthlyTableFootBrand');
-    foot.innerHTML = '';
-}
-
-function renderMonthlyKotaTable(config) {
+function renderMonthlyBrandTable(config) {
     const { groupField, label, bulan, tahun, elementIds } = config;
     const prevYear = tahun - 1;
     const monthIdx = MONTH_NAMES.indexOf(bulan);
@@ -1845,17 +1705,18 @@ function renderMonthlyKotaTable(config) {
         })
         .map(([k]) => k);
 
-    // Build qty matrices: proc x kota
+    // Build qty matrices: proc x brand
     function buildMatrix(data) {
         const mx = {};
         procValues.forEach(p => {
             mx[p] = {};
-            KOTA_LIST.forEach(k => mx[p][k] = 0);
+            BRAND_LIST.forEach(b => mx[p][b] = 0);
         });
         data.forEach(d => {
             const v = d[groupField] || '(kosong)';
-            if (mx[v] && KOTA_LIST.includes(d.cekKota)) {
-                mx[v][d.cekKota] += d.qty;
+            const b = getBrandGroup(d.brand);
+            if (mx[v] && mx[v][b] !== undefined) {
+                mx[v][b] += d.qty;
             }
         });
         return mx;
@@ -1865,31 +1726,31 @@ function renderMonthlyKotaTable(config) {
     const prevMMatrix = buildMatrix(prevMonthData);
     const yoyMatrix = buildMatrix(yoyData);
 
-    // Grand totals per kota
-    const curKotaTotals = {};
-    const prevMKotaTotals = {};
-    const yoyKotaTotals = {};
-    KOTA_LIST.forEach(k => {
-        curKotaTotals[k] = procValues.reduce((s, p) => s + curMatrix[p][k], 0);
-        prevMKotaTotals[k] = procValues.reduce((s, p) => s + prevMMatrix[p][k], 0);
-        yoyKotaTotals[k] = procValues.reduce((s, p) => s + yoyMatrix[p][k], 0);
+    // Grand totals per brand
+    const curBrandTotals = {};
+    const prevMBrandTotals = {};
+    const yoyBrandTotals = {};
+    BRAND_LIST.forEach(b => {
+        curBrandTotals[b] = procValues.reduce((s, p) => s + curMatrix[p][b], 0);
+        prevMBrandTotals[b] = procValues.reduce((s, p) => s + prevMMatrix[p][b], 0);
+        yoyBrandTotals[b] = procValues.reduce((s, p) => s + yoyMatrix[p][b], 0);
     });
 
-    const curGrandTotal = KOTA_LIST.reduce((s, k) => s + curKotaTotals[k], 0);
-    const prevMGrandTotal = KOTA_LIST.reduce((s, k) => s + prevMKotaTotals[k], 0);
-    const yoyGrandTotal = KOTA_LIST.reduce((s, k) => s + yoyKotaTotals[k], 0);
+    const curGrandTotal = BRAND_LIST.reduce((s, b) => s + curBrandTotals[b], 0);
+    const prevMGrandTotal = BRAND_LIST.reduce((s, b) => s + prevMBrandTotals[b], 0);
+    const yoyGrandTotal = BRAND_LIST.reduce((s, b) => s + yoyBrandTotals[b], 0);
 
     // HEAD
     const head = document.getElementById(elementIds.head);
     head.innerHTML = `
         <tr class="ms-head-1">
-            <th rowspan="2" class="ms-bulan">Brand</th>
+            <th rowspan="2" class="ms-bulan">Proc</th>
             <th rowspan="2" class="ms-bulan">${label}</th>
-            ${KOTA_LIST.map(k => `<th colspan="2" class="ms-kota-header">${k}</th>`).join('')}
+            ${BRAND_LIST.map(b => `<th colspan="2" class="ms-kota-header">${b}</th>`).join('')}
             <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
         </tr>
         <tr class="ms-head-2">
-            ${KOTA_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            ${BRAND_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
             <th>QTY</th><th>%</th>
         </tr>
     `;
@@ -1901,13 +1762,13 @@ function renderMonthlyKotaTable(config) {
     // Pre-compute all % values for color scale (data rows only)
     const allPctsProc = [];
     procValues.forEach(proc => {
-        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[proc][k], 0);
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + curMatrix[proc][b], 0);
         const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
         if (rowPct > 0) allPctsProc.push(rowPct);
-        KOTA_LIST.forEach(kota => {
-            const qty = curMatrix[proc][kota];
-            const kotaTotal = curKotaTotals[kota];
-            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
+        BRAND_LIST.forEach(brand => {
+            const qty = curMatrix[proc][brand];
+            const brandTotal = curBrandTotals[brand];
+            const pct = brandTotal > 0 ? (qty / brandTotal) * 100 : 0;
             if (pct > 0) allPctsProc.push(pct);
         });
     });
@@ -1923,9 +1784,7 @@ function renderMonthlyKotaTable(config) {
     const procBrands = procValues.map(p => getProcBrandGroup(p));
     
     procValues.forEach((proc, rowIdx) => {
-        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[proc][k], 0);
-        const rowPrevM = KOTA_LIST.reduce((s, k) => s + prevMMatrix[proc][k], 0);
-        const rowYoy = KOTA_LIST.reduce((s, k) => s + yoyMatrix[proc][k], 0);
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + curMatrix[proc][b], 0);
 
         const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
 
@@ -1943,10 +1802,10 @@ function renderMonthlyKotaTable(config) {
         bodyHtml += brandCell;
         bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(proc)}</strong></td>`;
 
-        KOTA_LIST.forEach(kota => {
-            const qty = curMatrix[proc][kota];
-            const kotaTotal = curKotaTotals[kota];
-            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
+        BRAND_LIST.forEach(brand => {
+            const qty = curMatrix[proc][brand];
+            const brandTotal = curBrandTotals[brand];
+            const pct = brandTotal > 0 ? (qty / brandTotal) * 100 : 0;
 
             bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
             bodyHtml += `<td class="ms-pct-white"${pctBgStyleProc(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
@@ -1961,8 +1820,8 @@ function renderMonthlyKotaTable(config) {
     // Total row (above YoY)
     bodyHtml += `<tr class="ms-grand-row">`;
     bodyHtml += `<td colspan="2"><strong>Total</strong></td>`;
-    KOTA_LIST.forEach(kota => {
-        const qty = curKotaTotals[kota];
+    BRAND_LIST.forEach(brand => {
+        const qty = curBrandTotals[brand];
         const pct = curGrandTotal > 0 ? (qty / curGrandTotal) * 100 : 0;
         bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
         bodyHtml += `<td class="ms-pct-white"><strong>${pct.toFixed(1)}%</strong></td>`;
@@ -1974,9 +1833,9 @@ function renderMonthlyKotaTable(config) {
     // YoY row
     bodyHtml += `<tr class="ms-yoy-row">`;
     bodyHtml += `<td class="ms-bulan-cell" colspan="2"><strong>YoY</strong><br><small>${bulan} ${tahun} vs ${bulan} ${prevYear}</small></td>`;
-    KOTA_LIST.forEach(kota => {
-        const cur = curKotaTotals[kota];
-        const prev = yoyKotaTotals[kota];
+    BRAND_LIST.forEach(brand => {
+        const cur = curBrandTotals[brand];
+        const prev = yoyBrandTotals[brand];
         const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
         bodyHtml += `<td class="ms-qty">${formatNumber(cur)} <small>vs ${formatNumber(prev)}</small></td>`;
         bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
