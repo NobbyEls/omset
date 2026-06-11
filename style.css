@@ -1433,7 +1433,7 @@ td.nama-barang {
 .monthly-kota-table {
     min-width: unset;
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed;
 }
 
 .monthly-kota-table .ms-kota-header {
@@ -1445,23 +1445,26 @@ td.nama-barang {
     font-size: 0.7rem;
 }
 
-/* Monthly table: proportional columns, no fixed widths */
+/* Monthly cells: larger, readable font. Wrap instead of overflow so
+   the fixed-width (equal QTY/%) columns never need horizontal scroll. */
 .monthly-kota-table td,
 .monthly-kota-table th {
-    padding: 6px 4px !important;
-    font-size: 0.72rem !important;
+    padding: 8px 5px !important;
+    font-size: 0.85rem !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
 }
 
 .monthly-kota-table .ms-bulan-cell,
 .monthly-kota-table .ms-brand-merged {
-    font-size: 0.72rem !important;
-    white-space: nowrap !important;
+    font-size: 0.85rem !important;
+    white-space: normal !important;
 }
 
-/* Monthly tables can be wide (esp. proc x brand). Allow horizontal
-   scroll so larger fonts never clip the rightmost (TOTAL) columns. */
+/* Analisa Bulanan tables fit the container width (table-layout:
+   fixed below), so no horizontal scroll is needed. */
 .monthly-analysis-section .ms-table-wrap {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .ms-yoy-row {
@@ -1666,17 +1669,26 @@ td.nama-barang {
    Scoped via .monthly-kota-table so the Analisa Tahunan
    marketshare table is left unchanged. Sizes tuned for 100% zoom.
    ------------------------------------------------------------ */
-.ms-table.monthly-kota-table thead th {
-    font-size: 0.86rem;
-    padding: 11px 10px;
-}
 .ms-table.monthly-kota-table thead th small {
     font-size: 0.74rem;
 }
-.ms-table.monthly-kota-table tbody td {
-    font-size: 0.95rem;
-    padding: 10px 10px;
-}
 .ms-table.monthly-kota-table tbody td small {
     font-size: 0.82rem;
+}
+
+
+/* ------------------------------------------------------------
+   Analisa Bulanan: fit every table to the container width so there
+   is NO horizontal scroll. table-layout: fixed makes each QTY and %
+   column equal width (space-saving — requested for the Kolom W &
+   Kolom V tables); long labels/values wrap instead of overflowing.
+   ------------------------------------------------------------ */
+/* Label columns get fixed room; the remaining QTY & % columns split
+   the rest of the width equally (so QTY and % end up the same width). */
+#monthlyTableW thead th.ms-bulan,
+#monthlyTableV thead th.ms-bulan {
+    width: 8%;
+}
+#monthlyTableBrand thead th.ms-bulan {
+    width: 12%;
 }
