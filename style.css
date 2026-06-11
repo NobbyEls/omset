@@ -1152,7 +1152,7 @@ td.nama-barang {
     vertical-align: middle;
     border: 1px solid var(--border-subtle);
     color: var(--text-secondary);
-    font-family: 'Space Grotesk', monospace;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 0.78rem;
     white-space: nowrap;
 }
@@ -1632,13 +1632,29 @@ td.nama-barang {
 
 
 /* ============================================================
-   Force Arial for all data tables (all tabs)
-   Targets .ms-table (marketshare + all monthly tables) and
-   every element rendered inside them.
+   Table fonts (all tabs)
+   - Labels & headers: Arial (clean, neutral)
+   - Numbers & percentages: Roboto Mono (monospaced, tabular
+     figures). Chosen for unambiguous digits — the counters of
+     0 / 6 / 8 / 9 are clearly distinct and columns stay aligned.
+     Applied to numeric cells AND any nested <span>/<small>/<div>
+     inside them so every digit uses the clear font.
    ============================================================ */
 .ms-table,
 .ms-table th,
-.ms-table td,
-.ms-table * {
+.ms-table td {
     font-family: Arial, Helvetica, sans-serif;
+}
+
+.ms-table .ms-qty, .ms-table .ms-qty *,
+.ms-table .ms-pct, .ms-table .ms-pct *,
+.ms-table .ms-pct-white, .ms-table .ms-pct-white *,
+.ms-table .ms-mom-cell, .ms-table .ms-mom-cell *,
+.ms-table .ms-yoy-cell, .ms-table .ms-yoy-cell *,
+.ms-table .ms-est-cell, .ms-table .ms-est-cell *,
+.ms-table .ms-growth-cell, .ms-table .ms-growth-cell *,
+.ms-table .ms-total-cell, .ms-table .ms-total-cell * {
+    font-family: 'Roboto Mono', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
 }
