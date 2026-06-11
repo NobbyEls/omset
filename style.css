@@ -1760,3 +1760,24 @@ td.nama-barang {
     background: rgba(99, 102, 241, 0.2) !important;
     color: var(--text-primary) !important;
 }
+
+
+/* ================= PDF Export (html2pdf) ================= */
+.pdf-exporting .bg-decoration,
+.pdf-exporting .filters-section,
+.pdf-exporting .main-nav-tabs,
+.pdf-exporting #cacheStatus,
+.pdf-exporting #btnRefresh,
+.pdf-exporting #btnForceRefresh,
+.pdf-exporting #btnPDF,
+.pdf-exporting #loadingOverlay {
+    display: none !important;
+}
+.pdf-exporting .sticky-top-group {
+    position: static !important;
+}
+.pdf-exporting .ms-table-wrap,
+.pdf-exporting .table-wrapper {
+    max-height: none !important;
+    overflow: visible !important;
+}

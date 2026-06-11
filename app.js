@@ -2162,6 +2162,44 @@ function formatPctCell(currentPct, previousPct) {
 // EXPORT
 // =========================================================
 
+function exportReportPDF() {
+    if (typeof html2pdf === 'undefined') {
+        alert('Modul PDF belum termuat. Periksa koneksi internet lalu coba lagi.');
+        return;
+    }
+    const btn = document.getElementById('btnPDF');
+    const activeTab = document.querySelector('.main-tab.active');
+    const tabName = activeTab ? activeTab.textContent.trim() : 'Report';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'Menyiapkan PDF…'; }
+
+    document.body.classList.add('pdf-exporting');
+
+    const target = document.querySelector('.container');
+    const opts = {
+        margin: [8, 8, 8, 8],
+        filename: `laptop-analytics-${tabName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${dateStr}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, backgroundColor: '#07091a', useCORS: true, windowWidth: 1600 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['.chart-card', '.table-section', '.monthly-table-block', '.charts-row'] }
+    };
+
+    const cleanup = () => {
+        document.body.classList.remove('pdf-exporting');
+        if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    };
+
+    setTimeout(() => {
+        html2pdf().set(opts).from(target).save().then(cleanup).catch(err => {
+            console.error('PDF export error:', err);
+            cleanup();
+            alert('Gagal membuat PDF. Silakan coba lagi.');
+        });
+    }, 150);
+}
+
 function exportCSV() {
     if (filteredData.length === 0) {
         alert('Tidak ada data untuk di-export');
@@ -2205,6 +2243,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnReset').addEventListener('click', resetFilters);
     const btnExport = document.getElementById('btnExport');
     if (btnExport) btnExport.addEventListener('click', exportCSV);
+    const btnPDF = document.getElementById('btnPDF');
+    if (btnPDF) btnPDF.addEventListener('click', exportReportPDF);
     document.getElementById('btnRefresh').addEventListener('click', () => {
         showLoadingAgain();
         document.getElementById('progressFill').style.background = '';
