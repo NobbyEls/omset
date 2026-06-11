@@ -1630,3 +1630,15 @@ td.nama-barang {
     color: var(--text-primary);
 }
 
+
+/* ============================================================
+   Force Arial for all data tables (all tabs)
+   Targets .ms-table (marketshare + all monthly tables) and
+   every element rendered inside them.
+   ============================================================ */
+.ms-table,
+.ms-table th,
+.ms-table td,
+.ms-table * {
+    font-family: Arial, Helvetica, sans-serif;
+}

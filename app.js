@@ -1600,6 +1600,7 @@ function renderMonthlyAnalysis() {
     renderMonthlyBrandTable({
         groupField: 'seriProc',
         label: 'Seri Proc',
+        sortCoreAlpha: true,
         bulan, tahun,
         elementIds: {
             info: 'monthlyInfoV',
@@ -1748,7 +1749,7 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
 }
 
 function renderMonthlyBrandTable(config) {
-    const { groupField, label, bulan, tahun, elementIds } = config;
+    const { groupField, label, bulan, tahun, elementIds, sortCoreAlpha } = config;
     const prevYear = tahun - 1;
     const monthIdx = MONTH_NAMES.indexOf(bulan);
     const prevMonthIdx = monthIdx - 1;
@@ -1838,6 +1839,14 @@ function renderMonthlyBrandTable(config) {
             const groupA = PROC_BRAND_ORDER.indexOf(brandA);
             const groupB = PROC_BRAND_ORDER.indexOf(brandB);
             if (groupA !== groupB) return groupA - groupB;
+            // Kolom V: seri proc yang diawali "Core" diurutkan alfabetis (numeric-aware)
+            if (sortCoreAlpha) {
+                const aCore = a[0].toLowerCase().startsWith('core');
+                const bCore = b[0].toLowerCase().startsWith('core');
+                if (aCore && bCore) {
+                    return a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' });
+                }
+            }
             const tierA = getProcTierIndex(a[0], brandA);
             const tierB = getProcTierIndex(b[0], brandB);
             if (tierA !== tierB) return tierA - tierB;
