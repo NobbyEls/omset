@@ -1716,7 +1716,10 @@ td.nama-barang {
     z-index: 80;
     margin-bottom: 0;
     padding: 12px 0;
-    background: transparent;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 2px solid var(--border-medium);
+    border-radius: 0;
+    box-shadow: var(--shadow-card);
 }
