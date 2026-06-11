@@ -1714,3 +1714,7 @@ td.nama-barang {
     flex: 1;
     align-items: center;
 }
+
+
+/* Brand x Category (Gaming/Non Gaming) monthly table — wider Brand label */
+#monthlyTableCategory thead th.ms-bulan { width: 18%; }

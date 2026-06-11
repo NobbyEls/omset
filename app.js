@@ -1585,6 +1585,7 @@ function getSelectedMonthlyFilter() {
 
 function renderMonthlyAnalysis() {
     const { bulan, tahun } = getSelectedMonthlyFilter();
+    renderMonthlyCategoryTable(bulan, tahun);
     renderMonthlyBrandKotaTable(bulan, tahun);
     renderMonthlyBrandTable({
         groupField: 'seriProc2',
@@ -1609,6 +1610,78 @@ function renderMonthlyAnalysis() {
             foot: 'monthlyTableFootV'
         }
     });
+}
+
+function renderMonthlyCategoryTable(bulan, tahun) {
+    const infoEl = document.getElementById('monthlyInfoCategory');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Gaming vs Non Gaming per Brand`;
+
+    // This table shows the Gaming/Non-Gaming split, so it ignores the
+    // category filter (always shows both columns).
+    const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan);
+
+    const mx = {};
+    BRAND_LIST.forEach(b => { mx[b] = { g: 0, n: 0 }; });
+    data.forEach(d => {
+        const b = getBrandGroup(d.brand);
+        if (!mx[b]) return;
+        if (d.cekGaming === 'GAMING') mx[b].g += d.qty;
+        else if (d.cekGaming === 'NON GAMING') mx[b].n += d.qty;
+    });
+
+    const totG = BRAND_LIST.reduce((s, b) => s + mx[b].g, 0);
+    const totN = BRAND_LIST.reduce((s, b) => s + mx[b].n, 0);
+    const grand = totG + totN;
+
+    const rows = BRAND_LIST.slice().sort((a, b) => (mx[b].g + mx[b].n) - (mx[a].g + mx[a].n));
+
+    const head = document.getElementById('monthlyTableHeadCategory');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Brand</th>
+            <th colspan="2" class="ms-kota-header">Gaming</th>
+            <th colspan="2" class="ms-kota-header">Non Gaming</th>
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            <th>QTY</th><th>%</th>
+            <th>QTY</th><th>%</th>
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    const body = document.getElementById('monthlyTableBodyCategory');
+    let html = '';
+    rows.forEach(brand => {
+        const g = mx[brand].g, n = mx[brand].n, t = g + n;
+        const gPct = totG > 0 ? (g / totG) * 100 : 0;
+        const nPct = totN > 0 ? (n / totN) * 100 : 0;
+        const tPct = grand > 0 ? (t / grand) * 100 : 0;
+        html += `<tr>`;
+        html += `<td class="ms-bulan-cell"><strong>${escapeHtml(brand)}</strong></td>`;
+        html += `<td class="ms-qty">${g > 0 ? formatNumber(g) : '-'}</td>`;
+        html += `<td class="ms-pct-white">${g > 0 ? gPct.toFixed(2) + '%' : '-'}</td>`;
+        html += `<td class="ms-qty">${n > 0 ? formatNumber(n) : '-'}</td>`;
+        html += `<td class="ms-pct-white">${n > 0 ? nPct.toFixed(2) + '%' : '-'}</td>`;
+        html += `<td class="ms-qty"><strong>${t > 0 ? formatNumber(t) : '-'}</strong></td>`;
+        html += `<td class="ms-pct-white"><strong>${t > 0 ? tPct.toFixed(2) + '%' : '-'}</strong></td>`;
+        html += `</tr>`;
+    });
+
+    const gGrand = grand > 0 ? (totG / grand) * 100 : 0;
+    const nGrand = grand > 0 ? (totN / grand) * 100 : 0;
+    html += `<tr class="ms-grand-row">`;
+    html += `<td><strong>Grand Total</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(totG)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>${gGrand.toFixed(2)}%</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(totN)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>${nGrand.toFixed(2)}%</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(grand)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>100.00%</strong></td>`;
+    html += `</tr>`;
+    body.innerHTML = html;
+
+    document.getElementById('monthlyTableFootCategory').innerHTML = '';
 }
 
 function renderMonthlyBrandKotaTable(bulan, tahun) {
