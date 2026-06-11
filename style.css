@@ -1445,20 +1445,19 @@ td.nama-barang {
     font-size: 0.7rem;
 }
 
-/* Monthly cells: larger, readable font. Wrap instead of overflow so
-   the fixed-width (equal QTY/%) columns never need horizontal scroll. */
+/* Monthly cells: compact font, no wrap. Smaller text keeps every
+   column readable AND fits the container with no horizontal scroll. */
 .monthly-kota-table td,
 .monthly-kota-table th {
-    padding: 8px 5px !important;
-    font-size: 0.85rem !important;
-    white-space: normal !important;
-    overflow-wrap: break-word !important;
+    padding: 5px 3px !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
 }
 
 .monthly-kota-table .ms-bulan-cell,
 .monthly-kota-table .ms-brand-merged {
-    font-size: 0.85rem !important;
-    white-space: normal !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
 }
 
 /* Analisa Bulanan tables fit the container width (table-layout:
@@ -1670,25 +1669,25 @@ td.nama-barang {
    marketshare table is left unchanged. Sizes tuned for 100% zoom.
    ------------------------------------------------------------ */
 .ms-table.monthly-kota-table thead th small {
-    font-size: 0.74rem;
+    font-size: 0.6rem;
 }
 .ms-table.monthly-kota-table tbody td small {
-    font-size: 0.82rem;
+    font-size: 0.6rem;
 }
 
 
 /* ------------------------------------------------------------
    Analisa Bulanan: fit every table to the container width so there
-   is NO horizontal scroll. table-layout: fixed makes each QTY and %
-   column equal width (space-saving — requested for the Kolom W &
-   Kolom V tables); long labels/values wrap instead of overflowing.
+   is NO horizontal scroll and NO wrap. table-layout: fixed makes each
+   QTY and % column equal width; the compact font (above) keeps the
+   single-line content within those columns.
    ------------------------------------------------------------ */
 /* Label columns get fixed room; the remaining QTY & % columns split
    the rest of the width equally (so QTY and % end up the same width). */
 #monthlyTableW thead th.ms-bulan,
 #monthlyTableV thead th.ms-bulan {
-    width: 8%;
+    width: 7%;
 }
 #monthlyTableBrand thead th.ms-bulan {
-    width: 12%;
+    width: 10%;
 }
