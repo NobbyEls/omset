@@ -1757,7 +1757,7 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
 
     // Info bar
     const infoEl = document.getElementById('monthlyInfoBrand');
-    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · YoY vs <strong>${bulan} ${prevYear}</strong>`;
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong>`;
 
     // Current month data
     const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
@@ -1867,21 +1867,6 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
     bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
     bodyHtml += `</tr>`;
 
-    // YoY row
-    bodyHtml += `<tr class="ms-yoy-row">`;
-    bodyHtml += `<td class="ms-bulan-cell"><strong>YoY</strong><br><small>${bulan} ${tahun} vs ${bulan} ${prevYear}</small></td>`;
-    KOTA_LIST.forEach(kota => {
-        const cur = curKotaTotals[kota];
-        const prev = yoyKotaTotals[kota];
-        const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
-        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br>${formatNumber(prev)}</td>`;
-        bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
-    });
-    const totalYoy = yoyGrandTotal > 0 ? ((curGrandTotal - yoyGrandTotal) / yoyGrandTotal) * 100 : null;
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><strong>${formatNumber(yoyGrandTotal)}</strong></td>`;
-    bodyHtml += `<td class="ms-yoy-cell">${totalYoy !== null ? formatGrowthCell(totalYoy) : '<span class="trend-neutral">-</span>'}</td>`;
-    bodyHtml += `</tr>`;
-
     body.innerHTML = bodyHtml;
 
     // FOOTER (empty now - total moved to body)
@@ -1899,7 +1884,7 @@ function renderMonthlyBrandTable(config) {
 
     // Info bar
     const infoEl = document.getElementById(elementIds.info);
-    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · MoM vs <strong>${prevMonthName} ${prevMonthYear}</strong> · YoY vs <strong>${bulan} ${prevYear}</strong>`;
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong>`;
 
     // Current month data
     const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
@@ -2118,21 +2103,6 @@ function renderMonthlyBrandTable(config) {
     });
     bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong></td>`;
     bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
-    bodyHtml += `</tr>`;
-
-    // YoY row
-    bodyHtml += `<tr class="ms-yoy-row">`;
-    bodyHtml += `<td class="ms-bulan-cell" colspan="2"><strong>YoY</strong><br><small>${bulan} ${tahun} vs ${bulan} ${prevYear}</small></td>`;
-    BRAND_LIST.forEach(brand => {
-        const cur = curBrandTotals[brand];
-        const prev = yoyBrandTotals[brand];
-        const yoy = prev > 0 ? ((cur - prev) / prev) * 100 : null;
-        bodyHtml += `<td class="ms-qty">${formatNumber(cur)}<br><small>vs</small><br>${formatNumber(prev)}</td>`;
-        bodyHtml += `<td class="ms-yoy-cell">${yoy !== null ? formatGrowthCell(yoy) : '<span class="trend-neutral">-</span>'}</td>`;
-    });
-    const totalYoy = yoyGrandTotal > 0 ? ((curGrandTotal - yoyGrandTotal) / yoyGrandTotal) * 100 : null;
-    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong><br><small>vs</small><br><strong>${formatNumber(yoyGrandTotal)}</strong></td>`;
-    bodyHtml += `<td class="ms-yoy-cell">${totalYoy !== null ? formatGrowthCell(totalYoy) : '<span class="trend-neutral">-</span>'}</td>`;
     bodyHtml += `</tr>`;
 
     body.innerHTML = bodyHtml;
