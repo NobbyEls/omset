@@ -1561,6 +1561,12 @@ const KOTA_LIST = ['YGY', 'SLO', 'PWT', 'SMG', 'TGL', 'BBS', 'MDN'];
 // Laptop brands shown as columns; anything outside ALLOWED_BRANDS rolls up into OTHER
 const BRAND_LIST = ['ASUS', 'LENOVO', 'ACER', 'APPLE', 'AXIOO', 'ADVAN', 'HP', 'MSI', 'OTHER'];
 
+// Brand colors matching the marketshare table header tints
+const BRAND_COLORS = {
+    ASUS: '#f59e0b', LENOVO: '#10b981', ACER: '#94a3b8', APPLE: '#a8a29e',
+    AXIOO: '#6366f1', ADVAN: '#fb923c', HP: '#f43f5e', MSI: '#3b82f6', OTHER: '#a855f7'
+};
+
 function getBrandGroup(brand) {
     return ALLOWED_BRANDS.includes(brand) ? brand : 'OTHER';
 }
@@ -1683,8 +1689,14 @@ function renderMonthlyCategoryTable(bulan, tahun) {
 
     document.getElementById('monthlyTableFootCategory').innerHTML = '';
 
-    // Donut chart: each brand's share of the TOTAL column (% of grand total)
-    const chartBrands = rows.filter(b => (mx[b].g + mx[b].n) > 0);
+    // Donut chart: each brand's share, following the active category filter
+    // (Semua = total, Gaming = gaming only, Non Gaming = non-gaming only).
+    const catSel = currentMonthlyCategory;
+    const brandVal = (b) => catSel === 'GAMING' ? mx[b].g : (catSel === 'NON GAMING' ? mx[b].n : (mx[b].g + mx[b].n));
+    const catLabel = catSel === 'GAMING' ? 'Gaming' : (catSel === 'NON GAMING' ? 'Non Gaming' : 'Total');
+    const titleEl = document.querySelector('.monthly-cat-chart-title');
+    if (titleEl) titleEl.textContent = `Porsi ${catLabel} per Brand (%)`;
+    const chartBrands = rows.filter(b => brandVal(b) > 0).sort((a, b) => brandVal(b) - brandVal(a));
     destroyChart('monthlyCategory');
     const catCanvas = document.getElementById('chartMonthlyCategory');
     if (catCanvas && typeof Chart !== 'undefined') {
@@ -1694,8 +1706,8 @@ function renderMonthlyCategoryTable(bulan, tahun) {
             data: {
                 labels: chartBrands,
                 datasets: [{
-                    data: chartBrands.map(b => mx[b].g + mx[b].n),
-                    backgroundColor: chartBrands.map((_, i) => COLORS[i % COLORS.length]),
+                    data: chartBrands.map(b => brandVal(b)),
+                    backgroundColor: chartBrands.map(b => BRAND_COLORS[b] || '#64748b'),
                     borderWidth: 3,
                     borderColor: '#0a0e1f',
                     hoverOffset: 8
@@ -1704,10 +1716,10 @@ function renderMonthlyCategoryTable(bulan, tahun) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '60%',
-                layout: { padding: 28 },
+                cutout: '58%',
+                layout: { padding: { top: 30, right: 24, bottom: 30, left: 24 } },
                 plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
                     tooltip: {
                         callbacks: {
                             label: c => {
@@ -1723,14 +1735,14 @@ function renderMonthlyCategoryTable(bulan, tahun) {
                             return tot > 0 && (c.dataset.data[c.dataIndex] / tot) >= 0.04;
                         },
                         color: '#fff',
-                        font: { weight: 'bold', size: 11, family: 'Space Grotesk' },
+                        font: { weight: 'bold', size: 10, family: 'Space Grotesk' },
                         formatter: (value, c) => {
                             const tot = c.dataset.data.reduce((a, b) => a + b, 0);
                             return tot > 0 ? ((value / tot) * 100).toFixed(1) + '%' : '';
                         },
                         anchor: 'end',
                         align: 'end',
-                        offset: 6,
+                        offset: 4,
                         textShadowBlur: 6,
                         textShadowColor: 'rgba(0,0,0,0.9)'
                     }
