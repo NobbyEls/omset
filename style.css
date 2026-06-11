@@ -1684,10 +1684,24 @@ td.nama-barang {
    ------------------------------------------------------------ */
 /* Label columns get fixed room; the remaining QTY & % columns split
    the rest of the width equally (so QTY and % end up the same width). */
-#monthlyTableW thead th.ms-bulan,
-#monthlyTableV thead th.ms-bulan {
+/* W/V: narrow Proc column; wide Seri Proc column so long labels
+   never overlap the data columns. */
+#monthlyTableW thead th.ms-bulan:first-child,
+#monthlyTableV thead th.ms-bulan:first-child {
     width: 7%;
+}
+#monthlyTableW thead th.ms-bulan:nth-child(2),
+#monthlyTableV thead th.ms-bulan:nth-child(2) {
+    width: 15%;
 }
 #monthlyTableBrand thead th.ms-bulan {
     width: 10%;
+}
+
+
+/* YoY row: stack value / "vs" / value on 3 lines (forced via <br>)
+   instead of overflowing; all other rows stay single-line (nowrap). */
+.monthly-kota-table .ms-yoy-row td {
+    white-space: normal !important;
+    line-height: 1.2;
 }
