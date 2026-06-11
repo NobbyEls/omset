@@ -1682,6 +1682,62 @@ function renderMonthlyCategoryTable(bulan, tahun) {
     body.innerHTML = html;
 
     document.getElementById('monthlyTableFootCategory').innerHTML = '';
+
+    // Donut chart: each brand's share of the TOTAL column (% of grand total)
+    const chartBrands = rows.filter(b => (mx[b].g + mx[b].n) > 0);
+    destroyChart('monthlyCategory');
+    const catCanvas = document.getElementById('chartMonthlyCategory');
+    if (catCanvas && typeof Chart !== 'undefined') {
+        charts.monthlyCategory = new Chart(catCanvas, {
+            type: 'doughnut',
+            plugins: [ChartDataLabels],
+            data: {
+                labels: chartBrands,
+                datasets: [{
+                    data: chartBrands.map(b => mx[b].g + mx[b].n),
+                    backgroundColor: chartBrands.map((_, i) => COLORS[i % COLORS.length]),
+                    borderWidth: 3,
+                    borderColor: '#0a0e1f',
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                layout: { padding: 28 },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: c => {
+                                const tot = c.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = tot > 0 ? ((c.raw / tot) * 100).toFixed(2) : '0';
+                                return `${c.label}: ${formatNumber(c.raw)} (${pct}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: c => {
+                            const tot = c.dataset.data.reduce((a, b) => a + b, 0);
+                            return tot > 0 && (c.dataset.data[c.dataIndex] / tot) >= 0.04;
+                        },
+                        color: '#fff',
+                        font: { weight: 'bold', size: 11, family: 'Space Grotesk' },
+                        formatter: (value, c) => {
+                            const tot = c.dataset.data.reduce((a, b) => a + b, 0);
+                            return tot > 0 ? ((value / tot) * 100).toFixed(1) + '%' : '';
+                        },
+                        anchor: 'end',
+                        align: 'end',
+                        offset: 6,
+                        textShadowBlur: 6,
+                        textShadowColor: 'rgba(0,0,0,0.9)'
+                    }
+                }
+            }
+        });
+    }
 }
 
 function renderMonthlyBrandKotaTable(bulan, tahun) {

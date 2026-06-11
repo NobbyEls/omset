@@ -1718,3 +1718,36 @@ td.nama-barang {
 
 /* Brand x Category (Gaming/Non Gaming) monthly table — wider Brand label */
 #monthlyTableCategory thead th.ms-bulan { width: 18%; }
+
+
+/* Brand x Category block: half-width table + doughnut chart beside it */
+.monthly-cat-layout {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+.monthly-cat-table-col {
+    flex: 1 1 340px;
+    min-width: 0;
+}
+.monthly-cat-chart-col {
+    flex: 1 1 300px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 360px;
+}
+.monthly-cat-chart-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: 'Space Grotesk', sans-serif;
+    text-align: center;
+    margin-bottom: 8px;
+}
+.monthly-cat-chart-canvas {
+    position: relative;
+    flex: 1;
+    min-height: 300px;
+}

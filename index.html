@@ -421,12 +421,22 @@
                     <p class="chart-subtitle">QTY dan % per brand, dipecah kategori Gaming / Non Gaming.</p>
                 </div>
                 <div class="ms-year-info" id="monthlyInfoCategory"></div>
-                <div class="table-wrapper ms-table-wrap">
-                    <table id="monthlyTableCategory" class="ms-table monthly-kota-table">
-                        <thead id="monthlyTableHeadCategory"></thead>
-                        <tbody id="monthlyTableBodyCategory"></tbody>
-                        <tfoot id="monthlyTableFootCategory"></tfoot>
-                    </table>
+                <div class="monthly-cat-layout">
+                    <div class="monthly-cat-table-col">
+                        <div class="table-wrapper ms-table-wrap">
+                            <table id="monthlyTableCategory" class="ms-table monthly-kota-table">
+                                <thead id="monthlyTableHeadCategory"></thead>
+                                <tbody id="monthlyTableBodyCategory"></tbody>
+                                <tfoot id="monthlyTableFootCategory"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="monthly-cat-chart-col">
+                        <div class="monthly-cat-chart-title">Porsi Total per Brand (%)</div>
+                        <div class="monthly-cat-chart-canvas">
+                            <canvas id="chartMonthlyCategory"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
 
