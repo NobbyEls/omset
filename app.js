@@ -2172,12 +2172,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.tab-content').forEach(panel => {
                 panel.classList.toggle('active', panel.id === targetId);
             });
-            // Hide global filters when Analisa Bulanan tab is active
-            const filtersSection = document.querySelector('.filters-section');
+            // Toggle filter bars: global on Tahunan, monthly on Bulanan
+            const globalFilters = document.querySelector('.filters-section:not(.monthly-filters-section)');
+            const monthlyFilters = document.getElementById('monthlyFiltersBar');
             if (targetId === 'tabBulanan') {
-                filtersSection.classList.add('hidden');
+                globalFilters.classList.add('hidden');
+                monthlyFilters.classList.remove('hidden');
             } else {
-                filtersSection.classList.remove('hidden');
+                globalFilters.classList.remove('hidden');
+                monthlyFilters.classList.add('hidden');
             }
             // Trigger monthly analysis render when switching to Bulanan tab
             if (targetId === 'tabBulanan') {

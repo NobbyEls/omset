@@ -1707,19 +1707,10 @@ td.nama-barang {
 }
 
 
-/* Analisa Bulanan: filter sits flush under the nav (like the header),
-   with no dark background bar. */
-.monthly-analysis-section { margin-top: 0; }
-.monthly-analysis-section .table-header {
-    position: sticky;
-    top: 138px; /* approx header + nav height; tune if needed */
-    z-index: 80;
-    margin-bottom: 0;
-    padding: 12px 0;
-    background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 2px solid var(--border-medium);
-    border-radius: 0;
-    box-shadow: var(--shadow-card);
+/* Analisa Bulanan: filter moved to the top bar (like Analisa Tahunan).
+   The section header is just the title now. */
+.monthly-analysis-section { margin-top: 24px; }
+.monthly-filters-section .monthly-filter-wrap {
+    flex: 1;
+    align-items: center;
 }
