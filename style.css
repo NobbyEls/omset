@@ -1777,3 +1777,135 @@ td.nama-barang {
     background: rgba(99, 102, 241, 0.2) !important;
     color: var(--text-primary) !important;
 }
+
+
+/* =========================================
+   THEME TOGGLE BUTTON
+   ========================================= */
+.btn-icon {
+    padding: 9px 11px;
+}
+
+/* Dark theme (default): show sun (click to switch to light).
+   Light theme: show moon (click to switch to dark). */
+.btn-theme .icon-moon { display: none; }
+.btn-theme .icon-sun { display: block; }
+[data-theme="light"] .btn-theme .icon-sun { display: none; }
+[data-theme="light"] .btn-theme .icon-moon { display: block; }
+
+
+/* =========================================
+   LIGHT THEME
+   ========================================= */
+[data-theme="light"] {
+    /* Background */
+    --bg-base: #eef1f7;
+    --bg-deep: #e3e8f2;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --bg-card-hover: rgba(255, 255, 255, 0.96);
+    --bg-glass: rgba(15, 23, 42, 0.04);
+    --bg-input: rgba(15, 23, 42, 0.04);
+
+    /* Borders */
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-medium: rgba(15, 23, 42, 0.13);
+    --border-strong: rgba(15, 23, 42, 0.22);
+
+    /* Text */
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+
+    /* Shadows */
+    --shadow-glow: 0 0 60px rgba(99, 102, 241, 0.10);
+    --shadow-card: 0 8px 28px rgba(15, 23, 42, 0.10);
+    --shadow-elevated: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+
+[data-theme="light"] body {
+    background-image:
+        radial-gradient(at 20% 0%, rgba(99, 102, 241, 0.10) 0%, transparent 50%),
+        radial-gradient(at 80% 50%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+}
+
+[data-theme="light"] .orb { opacity: 0.22; }
+
+[data-theme="light"] .brand-text h1 {
+    background: linear-gradient(135deg, #4338ca 0%, #db2777 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .loading-overlay {
+    background: rgba(238, 241, 247, 0.95);
+}
+
+[data-theme="light"] .filter-group select option,
+[data-theme="light"] .monthly-filter-group select option {
+    background: #ffffff;
+    color: #0f172a;
+}
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.04); }
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.30);
+    background-clip: padding-box;
+}
+
+/* Tables: light surfaces + headers */
+[data-theme="light"] .table-wrapper { background: rgba(255, 255, 255, 0.5); }
+[data-theme="light"] thead th { background: rgba(241, 245, 249, 0.97); }
+[data-theme="light"] tbody tr:hover { background: rgba(15, 23, 42, 0.03); }
+
+[data-theme="light"] .ms-table { background: rgba(255, 255, 255, 0.5); }
+[data-theme="light"] .ms-table thead th { background: rgba(241, 245, 249, 0.97); }
+[data-theme="light"] .ms-table tbody tr.ms-empty-row td { background: rgba(15, 23, 42, 0.04); }
+[data-theme="light"] .ms-table tbody tr:hover:not(.ms-empty-row) td { background: rgba(99, 102, 241, 0.08); }
+[data-theme="light"] .ms-table .ms-total { background: rgba(100, 116, 139, 0.18) !important; }
+
+/* Chart tags — darker text for contrast on light backgrounds */
+[data-theme="light"] .tag-blue { color: #1d4ed8; }
+[data-theme="light"] .tag-purple { color: #7c3aed; }
+[data-theme="light"] .tag-pink { color: #be185d; }
+[data-theme="light"] .tag-green { color: #047857; }
+[data-theme="light"] .tag-amber { color: #b45309; }
+[data-theme="light"] .tag-cyan { color: #0e7490; }
+
+/* Cache status badges */
+[data-theme="light"] .cache-cached { color: #047857; }
+[data-theme="light"] .cache-fresh-cached { color: #4338ca; }
+[data-theme="light"] .cache-fresh { color: #be123c; }
+[data-theme="light"] .btn-force { color: #be123c !important; }
+
+/* Marketshare brand header text — darker for contrast */
+[data-theme="light"] .ms-brand-acer { color: #475569 !important; }
+[data-theme="light"] .ms-brand-advan { color: #c2410c !important; }
+[data-theme="light"] .ms-brand-apple { color: #57534e !important; }
+[data-theme="light"] .ms-brand-asus { color: #b45309 !important; }
+[data-theme="light"] .ms-brand-axioo { color: #4338ca !important; }
+[data-theme="light"] .ms-brand-hp { color: #be123c !important; }
+[data-theme="light"] .ms-brand-lenovo { color: #047857 !important; }
+[data-theme="light"] .ms-brand-msi { color: #1d4ed8 !important; }
+[data-theme="light"] .ms-brand-other { color: #7c3aed !important; }
+[data-theme="light"] .ms-brand-dell { color: #0e7490 !important; }
+[data-theme="light"] .ms-brand-infinix { color: #be185d !important; }
+[data-theme="light"] .ms-brand-avita { color: #4d7c0f !important; }
+[data-theme="light"] .ms-brand-polytron { color: #a21caf !important; }
+[data-theme="light"] .ms-brand-spc { color: #0369a1 !important; }
+[data-theme="light"] .ms-brand-tecno { color: #0e7490 !important; }
+
+/* Marketshare accent cells */
+[data-theme="light"] .ms-table .ms-mom,
+[data-theme="light"] .ms-table .ms-yoy { color: #b45309 !important; }
+[data-theme="light"] .ms-table .ms-est,
+[data-theme="light"] .ms-table .ms-growth { color: #047857 !important; }
+[data-theme="light"] .ms-pct .pct-flat { color: #475569; }

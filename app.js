@@ -506,6 +506,60 @@ const COLORS = [
     '#fbbf24', '#60a5fa', '#f472b6', '#a3e635', '#2dd4bf'
 ];
 
+// =========================================================
+// THEME (light / dark)
+// =========================================================
+const THEME_KEY = 'omset_theme';
+
+function isLightTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+}
+
+// Grid line color for chart axes — evaluated at chart render time so it
+// reflects the current theme whenever charts are (re)rendered.
+function gridColor() {
+    return isLightTheme() ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.04)';
+}
+
+// Apply theme-dependent colors to Chart.js global defaults.
+function applyChartThemeColors() {
+    const light = isLightTheme();
+    Chart.defaults.color = light ? '#475569' : '#94a3b8';
+    Chart.defaults.borderColor = light ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.06)';
+    Chart.defaults.plugins.tooltip.backgroundColor = light ? 'rgba(255, 255, 255, 0.97)' : 'rgba(15, 20, 36, 0.95)';
+    Chart.defaults.plugins.tooltip.titleColor = light ? '#0f172a' : '#f1f5f9';
+    Chart.defaults.plugins.tooltip.bodyColor = light ? '#334155' : '#cbd5e1';
+    Chart.defaults.plugins.tooltip.borderColor = light ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+}
+
+// Switch theme, persist it, update charts and the toggle button.
+function setTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* ignore */ }
+    updateThemeButton();
+    applyChartThemeColors();
+    // Re-render charts so baked-in colors (grid, ticks, tooltip) match the theme.
+    if (filteredData && filteredData.length) {
+        renderCharts();
+        renderMonthlyAnalysis();
+    }
+}
+
+function toggleTheme() {
+    setTheme(isLightTheme() ? 'dark' : 'light');
+}
+
+// Keep the toggle button's tooltip in sync (icon swap is handled by CSS).
+function updateThemeButton() {
+    const btn = document.getElementById('btnTheme');
+    if (!btn) return;
+    btn.title = isLightTheme() ? 'Ganti ke tema gelap' : 'Ganti ke tema terang';
+}
+
 // Configure Chart.js global defaults for dark theme
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
@@ -521,6 +575,8 @@ Chart.defaults.plugins.tooltip.cornerRadius = 8;
 Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 13 };
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.legend.labels.padding = 14;
+// Override the static defaults above with theme-aware colors (handles light mode on load).
+applyChartThemeColors();
 
 // Register chartjs-plugin-datalabels per-chart on doughnut charts only.
 // Datalabels are disabled (display: false) on all doughnut charts;
@@ -571,7 +627,7 @@ function makeBarChart(canvasId, labels, data, label, colors, opts = {}) {
                 y: {
                     beginAtZero: true,
                     ticks: opts.yTicks || {},
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    grid: { color: gridColor() }
                 },
                 x: {
                     grid: { display: false }
@@ -630,9 +686,9 @@ function renderTrendChart() {
                 y: {
                     beginAtZero: true,
                     title: { display: true, text: 'Unit Terjual', color: '#94a3b8' },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    grid: { color: gridColor() }
                 },
-                x: { grid: { color: 'rgba(255, 255, 255, 0.04)' } }
+                x: { grid: { color: gridColor() } }
             }
         }
     });
@@ -679,7 +735,7 @@ function renderYoYRevenueChart() {
                 y: {
                     beginAtZero: true,
                     ticks: { callback: v => formatJutaAxis(v) },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    grid: { color: gridColor() },
                     title: { display: true, text: 'Revenue', color: '#94a3b8' }
                 },
                 x: { grid: { display: false } }
@@ -729,7 +785,7 @@ function renderYoYBrandChart() {
             interaction: { intersect: false, mode: 'index' },
             plugins: { legend: { position: 'top', align: 'end' } },
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.04)' } },
+                y: { beginAtZero: true, grid: { color: gridColor() } },
                 x: { grid: { display: false } }
             }
         }
@@ -770,7 +826,7 @@ function renderYoYKotaChart() {
             interaction: { intersect: false, mode: 'index' },
             plugins: { legend: { position: 'top', align: 'end' } },
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.04)' } },
+                y: { beginAtZero: true, grid: { color: gridColor() } },
                 x: { grid: { display: false } }
             }
         }
@@ -960,7 +1016,7 @@ function renderSalesChart() {
                 x: {
                     beginAtZero: true,
                     ticks: { callback: v => formatJutaAxis(v) },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    grid: { color: gridColor() }
                 },
                 y: { grid: { display: false } }
             }
@@ -1010,7 +1066,7 @@ function renderRevenueBrandChart() {
                 y: {
                     beginAtZero: true,
                     ticks: { callback: v => formatJutaAxis(v) },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    grid: { color: gridColor() }
                 },
                 x: { grid: { display: false } }
             }
@@ -1058,7 +1114,7 @@ function renderTopProductsChart() {
             hover: { intersect: false, mode: 'index', axis: 'y' },
             plugins: { legend: { display: false } },
             scales: {
-                x: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.04)' } },
+                x: { beginAtZero: true, grid: { color: gridColor() } },
                 y: { grid: { display: false } }
             }
         }
@@ -1155,7 +1211,7 @@ function renderProcStackedChart() {
                     stacked: true,
                     max: 100,
                     ticks: { callback: v => v + '%' },
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' }
+                    grid: { color: gridColor() }
                 }
             }
         }
@@ -2145,6 +2201,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('btnReset').addEventListener('click', resetFilters);
+
+    // Theme toggle (light / dark). The saved theme is applied pre-paint via an
+    // inline script in <head>; here we just sync the button and wire the click.
+    updateThemeButton();
+    const btnTheme = document.getElementById('btnTheme');
+    if (btnTheme) btnTheme.addEventListener('click', toggleTheme);
+
     const btnExport = document.getElementById('btnExport');
     if (btnExport) btnExport.addEventListener('click', exportCSV);
     document.getElementById('btnRefresh').addEventListener('click', () => {
