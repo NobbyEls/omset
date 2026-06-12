@@ -1460,6 +1460,23 @@ td.nama-barang {
     white-space: nowrap !important;
 }
 
+/* "Penjualan per Brand — Gaming vs Non Gaming" (#monthlyTableCategory):
+   larger, more readable than the other compact monthly tables. */
+#monthlyTableCategory td,
+#monthlyTableCategory th {
+    padding: 9px 10px !important;
+    font-size: 0.92rem !important;
+}
+
+#monthlyTableCategory .ms-bulan-cell,
+#monthlyTableCategory .ms-brand-merged {
+    font-size: 0.92rem !important;
+}
+
+#monthlyTableCategory .ms-kota-header {
+    font-size: 0.86rem !important;
+}
+
 /* Analisa Bulanan tables fit the container width (table-layout:
    fixed below), so no horizontal scroll is needed. */
 .monthly-analysis-section .ms-table-wrap {

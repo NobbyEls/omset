@@ -522,10 +522,10 @@ Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 13 };
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.legend.labels.padding = 14;
 
-// Register chartjs-plugin-datalabels globally and disable by default;
-// individual doughnut charts opt-in via display: true.
-// ChartDataLabels NOT registered globally - only passed per-chart to doughnut charts
-// This ensures bar/line/stacked charts never show labels
+// Register chartjs-plugin-datalabels per-chart on doughnut charts only.
+// Datalabels are disabled (display: false) on all doughnut charts;
+// legend & tooltip remain active. ChartDataLabels is NOT registered
+// globally, so bar/line/stacked charts never show labels.
 
 function renderCharts() {
     renderTrendChart();
@@ -826,21 +826,7 @@ function renderGamingChart() {
                         }
                     }
                 },
-                datalabels: {
-                    display: true,
-                    color: '#fff',
-                    font: { weight: 'bold', size: 13, family: 'Space Grotesk' },
-                    formatter: (value, ctx) => {
-                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        if (total === 0) return '';
-                        return ((value / total) * 100).toFixed(1) + '%';
-                    },
-                    anchor: 'end',
-                    align: 'end',
-                    offset: 8,
-                    textShadowBlur: 6,
-                    textShadowColor: 'rgba(0,0,0,0.9)'
-                }
+                datalabels: { display: false }
             }
         }
     });
@@ -891,21 +877,7 @@ function renderProcChart() {
                         }
                     }
                 },
-                datalabels: {
-                    display: true,
-                    color: '#fff',
-                    font: { weight: 'bold', size: 13, family: 'Space Grotesk' },
-                    formatter: (value, ctx) => {
-                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        if (total === 0) return '';
-                        return ((value / total) * 100).toFixed(1) + '%';
-                    },
-                    anchor: 'end',
-                    align: 'end',
-                    offset: 8,
-                    textShadowBlur: 6,
-                    textShadowColor: 'rgba(0,0,0,0.9)'
-                }
+                datalabels: { display: false }
             }
         }
     });
@@ -945,21 +917,7 @@ function renderDivisiChart() {
                         }
                     }
                 },
-                datalabels: {
-                    display: true,
-                    color: '#fff',
-                    font: { weight: 'bold', size: 13, family: 'Space Grotesk' },
-                    formatter: (value, ctx) => {
-                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                        if (total === 0) return '';
-                        return ((value / total) * 100).toFixed(1) + '%';
-                    },
-                    anchor: 'end',
-                    align: 'end',
-                    offset: 8,
-                    textShadowBlur: 6,
-                    textShadowColor: 'rgba(0,0,0,0.9)'
-                }
+                datalabels: { display: false }
             }
         }
     });
@@ -1729,23 +1687,7 @@ function renderMonthlyCategoryTable(bulan, tahun) {
                             }
                         }
                     },
-                    datalabels: {
-                        display: c => {
-                            const tot = c.dataset.data.reduce((a, b) => a + b, 0);
-                            return tot > 0 && (c.dataset.data[c.dataIndex] / tot) >= 0.04;
-                        },
-                        color: '#fff',
-                        font: { weight: 'bold', size: 10, family: 'Space Grotesk' },
-                        formatter: (value, c) => {
-                            const tot = c.dataset.data.reduce((a, b) => a + b, 0);
-                            return tot > 0 ? ((value / tot) * 100).toFixed(1) + '%' : '';
-                        },
-                        anchor: 'end',
-                        align: 'end',
-                        offset: 4,
-                        textShadowBlur: 6,
-                        textShadowColor: 'rgba(0,0,0,0.9)'
-                    }
+                    datalabels: { display: false }
                 }
             }
         });
