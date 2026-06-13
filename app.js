@@ -524,11 +524,11 @@ function gridColor() {
 // Apply theme-dependent colors to Chart.js global defaults.
 function applyChartThemeColors() {
     const light = isLightTheme();
-    Chart.defaults.color = light ? '#475569' : '#94a3b8';
+    Chart.defaults.color = light ? '#475569' : '#e2e8f0';
     Chart.defaults.borderColor = light ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.06)';
     Chart.defaults.plugins.tooltip.backgroundColor = light ? 'rgba(255, 255, 255, 0.97)' : 'rgba(15, 20, 36, 0.95)';
     Chart.defaults.plugins.tooltip.titleColor = light ? '#0f172a' : '#f1f5f9';
-    Chart.defaults.plugins.tooltip.bodyColor = light ? '#334155' : '#cbd5e1';
+    Chart.defaults.plugins.tooltip.bodyColor = light ? '#334155' : '#f1f5f9';
     Chart.defaults.plugins.tooltip.borderColor = light ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)';
 }
 
@@ -685,7 +685,7 @@ function renderTrendChart() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: 'Unit Terjual', color: '#94a3b8' },
+                    title: { display: true, text: 'Unit Terjual' },
                     grid: { color: gridColor() }
                 },
                 x: { grid: { color: gridColor() } }
@@ -736,7 +736,7 @@ function renderYoYRevenueChart() {
                     beginAtZero: true,
                     ticks: { callback: v => formatJutaAxis(v) },
                     grid: { color: gridColor() },
-                    title: { display: true, text: 'Revenue', color: '#94a3b8' }
+                    title: { display: true, text: 'Revenue' }
                 },
                 x: { grid: { display: false } }
             }

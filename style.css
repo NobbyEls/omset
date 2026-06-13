@@ -16,11 +16,11 @@
     --border-medium: rgba(255, 255, 255, 0.1);
     --border-strong: rgba(255, 255, 255, 0.18);
 
-    /* Text */
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
-    --text-dim: #64748b;
+    /* Text — dark theme, brightened 2 steps for stronger legibility */
+    --text-primary: #f8fafc;
+    --text-secondary: #f1f5f9;
+    --text-muted: #e2e8f0;
+    --text-dim: #cbd5e1;
 
     /* Brand Colors */
     --indigo: #6366f1;
@@ -1268,7 +1268,7 @@ td.nama-barang {
 }
 
 .ms-pct .pct-flat {
-    color: #cbd5e1;
+    color: #f1f5f9;
     font-weight: 600;
 }
 
