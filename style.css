@@ -1811,11 +1811,11 @@ td.nama-barang {
     --border-medium: rgba(15, 23, 42, 0.13);
     --border-strong: rgba(15, 23, 42, 0.22);
 
-    /* Text */
-    --text-primary: #0f172a;
-    --text-secondary: #1e293b;
-    --text-muted: #475569;
-    --text-dim: #64748b;
+    /* Text — one step darker for stronger contrast on light backgrounds */
+    --text-primary: #020617;
+    --text-secondary: #0f172a;
+    --text-muted: #334155;
+    --text-dim: #475569;
 
     /* Shadows */
     --shadow-glow: 0 0 60px rgba(99, 102, 241, 0.10);
@@ -1873,39 +1873,49 @@ td.nama-barang {
 [data-theme="light"] .ms-table .ms-total { background: rgba(100, 116, 139, 0.18) !important; }
 
 /* Chart tags — darker text for contrast on light backgrounds */
-[data-theme="light"] .tag-blue { color: #1d4ed8; }
-[data-theme="light"] .tag-purple { color: #7c3aed; }
-[data-theme="light"] .tag-pink { color: #be185d; }
-[data-theme="light"] .tag-green { color: #047857; }
-[data-theme="light"] .tag-amber { color: #b45309; }
-[data-theme="light"] .tag-cyan { color: #0e7490; }
+[data-theme="light"] .tag-blue { color: #1e40af; }
+[data-theme="light"] .tag-purple { color: #6d28d9; }
+[data-theme="light"] .tag-pink { color: #9d174d; }
+[data-theme="light"] .tag-green { color: #065f46; }
+[data-theme="light"] .tag-amber { color: #92400e; }
+[data-theme="light"] .tag-cyan { color: #155e75; }
 
 /* Cache status badges */
-[data-theme="light"] .cache-cached { color: #047857; }
-[data-theme="light"] .cache-fresh-cached { color: #4338ca; }
-[data-theme="light"] .cache-fresh { color: #be123c; }
-[data-theme="light"] .btn-force { color: #be123c !important; }
+[data-theme="light"] .cache-cached { color: #065f46; }
+[data-theme="light"] .cache-fresh-cached { color: #3730a3; }
+[data-theme="light"] .cache-fresh { color: #9f1239; }
+[data-theme="light"] .btn-force { color: #9f1239 !important; }
 
 /* Marketshare brand header text — darker for contrast */
-[data-theme="light"] .ms-brand-acer { color: #475569 !important; }
-[data-theme="light"] .ms-brand-advan { color: #c2410c !important; }
-[data-theme="light"] .ms-brand-apple { color: #57534e !important; }
-[data-theme="light"] .ms-brand-asus { color: #b45309 !important; }
-[data-theme="light"] .ms-brand-axioo { color: #4338ca !important; }
-[data-theme="light"] .ms-brand-hp { color: #be123c !important; }
-[data-theme="light"] .ms-brand-lenovo { color: #047857 !important; }
-[data-theme="light"] .ms-brand-msi { color: #1d4ed8 !important; }
-[data-theme="light"] .ms-brand-other { color: #7c3aed !important; }
-[data-theme="light"] .ms-brand-dell { color: #0e7490 !important; }
-[data-theme="light"] .ms-brand-infinix { color: #be185d !important; }
-[data-theme="light"] .ms-brand-avita { color: #4d7c0f !important; }
-[data-theme="light"] .ms-brand-polytron { color: #a21caf !important; }
-[data-theme="light"] .ms-brand-spc { color: #0369a1 !important; }
-[data-theme="light"] .ms-brand-tecno { color: #0e7490 !important; }
+[data-theme="light"] .ms-brand-acer { color: #334155 !important; }
+[data-theme="light"] .ms-brand-advan { color: #9a3412 !important; }
+[data-theme="light"] .ms-brand-apple { color: #44403c !important; }
+[data-theme="light"] .ms-brand-asus { color: #92400e !important; }
+[data-theme="light"] .ms-brand-axioo { color: #3730a3 !important; }
+[data-theme="light"] .ms-brand-hp { color: #9f1239 !important; }
+[data-theme="light"] .ms-brand-lenovo { color: #065f46 !important; }
+[data-theme="light"] .ms-brand-msi { color: #1e40af !important; }
+[data-theme="light"] .ms-brand-other { color: #6d28d9 !important; }
+[data-theme="light"] .ms-brand-dell { color: #155e75 !important; }
+[data-theme="light"] .ms-brand-infinix { color: #9d174d !important; }
+[data-theme="light"] .ms-brand-avita { color: #3f6212 !important; }
+[data-theme="light"] .ms-brand-polytron { color: #86198f !important; }
+[data-theme="light"] .ms-brand-spc { color: #075985 !important; }
+[data-theme="light"] .ms-brand-tecno { color: #155e75 !important; }
 
 /* Marketshare accent cells */
 [data-theme="light"] .ms-table .ms-mom,
-[data-theme="light"] .ms-table .ms-yoy { color: #b45309 !important; }
+[data-theme="light"] .ms-table .ms-yoy { color: #92400e !important; }
 [data-theme="light"] .ms-table .ms-est,
-[data-theme="light"] .ms-table .ms-growth { color: #047857 !important; }
-[data-theme="light"] .ms-pct .pct-flat { color: #475569; }
+[data-theme="light"] .ms-table .ms-growth { color: #065f46 !important; }
+
+/* Status / percentage indicators — darker for light backgrounds */
+[data-theme="light"] .ms-table .ms-pct { color: #be123c; }
+[data-theme="light"] .ms-pct .pct-up,
+[data-theme="light"] .trend-up { color: #047857; }
+[data-theme="light"] .ms-pct .pct-down,
+[data-theme="light"] .trend-down { color: #be123c; }
+[data-theme="light"] .ms-pct .pct-flat { color: #334155; }
+
+/* Top 15 Produk Terlaris — Proc dropdown options (avoid dark bg under dark text) */
+[data-theme="light"] .top-prod-select option { background: #ffffff; color: #0f172a; }

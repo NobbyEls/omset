@@ -860,8 +860,8 @@ function renderGamingChart() {
             datasets: [{
                 data: Object.values(data),
                 backgroundColor: ['#f43f5e', '#3b82f6', '#10b981'],
-                borderWidth: 3,
-                borderColor: '#0a0e1f',
+                borderWidth: 0,
+                borderColor: 'transparent',
                 hoverOffset: 8
             }]
         },
@@ -911,8 +911,8 @@ function renderProcChart() {
             datasets: [{
                 data: Object.values(data),
                 backgroundColor: ['#6366f1', '#f43f5e', '#10b981', '#a855f7'],
-                borderWidth: 3,
-                borderColor: '#0a0e1f',
+                borderWidth: 0,
+                borderColor: 'transparent',
                 hoverOffset: 8
             }]
         },
@@ -951,8 +951,8 @@ function renderDivisiChart() {
             datasets: [{
                 data: sorted.map(s => s[1]),
                 backgroundColor: ['#6366f1', '#f59e0b', '#10b981', '#a855f7', '#f43f5e'],
-                borderWidth: 3,
-                borderColor: '#0a0e1f',
+                borderWidth: 0,
+                borderColor: 'transparent',
                 hoverOffset: 8
             }]
         },
@@ -1722,8 +1722,8 @@ function renderMonthlyCategoryTable(bulan, tahun) {
                 datasets: [{
                     data: chartBrands.map(b => brandVal(b)),
                     backgroundColor: chartBrands.map(b => BRAND_COLORS[b] || '#64748b'),
-                    borderWidth: 3,
-                    borderColor: '#0a0e1f',
+                    borderWidth: 0,
+                    borderColor: 'transparent',
                     hoverOffset: 8
                 }]
             },
