@@ -757,6 +757,7 @@ body {
 
 .table-wrapper {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     max-height: 600px;
     border-radius: 12px;
     border: 1px solid var(--border-subtle);
@@ -963,23 +964,41 @@ td.nama-barang {
 }
 
 @media (max-width: 768px) {
-    .container { padding: 16px; }
-    .header { flex-direction: column; align-items: flex-start; padding: 18px 20px; }
-    .header-actions { width: 100%; }
+    /* On phones the top bar (header + filters + tabs) stacks tall; keeping it
+       frozen (sticky) makes it cover the charts/tables behind it. Let it scroll
+       away with the page instead. */
+    .sticky-top-group { position: static; z-index: auto; }
+
+    .container { padding: 14px; }
+    .header { flex-direction: column; align-items: stretch; padding: 16px; }
+    .header-brand { width: 100%; justify-content: space-between; gap: 10px; }
+    .header-actions { width: 100%; flex-wrap: wrap; gap: 8px; }
     .filters-section { flex-direction: column; align-items: stretch; }
     .filter-grid { grid-template-columns: repeat(2, 1fr); }
+    .monthly-filter-wrap { flex-wrap: wrap; }
     .search-wrap input { width: 100%; }
     .table-controls { width: 100%; flex-direction: column; }
     .table-controls input, .btn-export { width: 100%; }
     .kpi-section { grid-template-columns: repeat(2, 1fr); }
     .brand-text h1 { font-size: 1.2rem; }
     .main-tab { padding: 12px 16px; font-size: 0.85rem; }
+    /* Tables scroll horizontally; cap height so one table doesn't fill the page */
+    .table-wrapper { max-height: 70vh; }
+    .monthly-cat-layout { gap: 14px; }
+    .monthly-cat-chart-col { min-height: 360px; }
 }
 
 @media (max-width: 480px) {
     .kpi-section { grid-template-columns: 1fr; }
     .filter-grid { grid-template-columns: 1fr; }
     .pagination button { padding: 6px 10px; font-size: 0.72rem; }
+    .container { padding: 10px; }
+    .logo-img { height: 38px; margin-left: 0; }
+    .brand-text h1 { font-size: 1.1rem; }
+    .brand-text .subtitle { font-size: 0.72rem; }
+    .btn-glass { padding: 8px 12px; font-size: 0.8rem; }
+    .chart-card { padding: 14px; }
+    .monthly-table-title h4 { font-size: 0.92rem; }
 }
 
 
