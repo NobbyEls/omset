@@ -2219,7 +2219,124 @@ function exportCSV() {
 // EVENTS
 // =========================================================
 
+// =========================================================
+// DOWNLOAD AS IMAGE (charts & tables)
+// =========================================================
+
+function makeImageFilename(target) {
+    const titleEl = target.querySelector('h3, h4');
+    let base = titleEl ? titleEl.textContent : 'analisa';
+    base = base.replace(/[—·•:]/g, '-')
+               .replace(/[^\w\s-]/g, '')
+               .trim()
+               .replace(/\s+/g, '-')
+               .slice(0, 60);
+    const d = new Date();
+    const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return `${base || 'analisa'}-${stamp}`;
+}
+
+// Render a chart card or table block to a PNG and trigger a download.
+async function captureAndDownload(target, btn) {
+    if (!target) return;
+    if (typeof html2canvas === 'undefined') {
+        alert('Modul gambar belum siap. Coba lagi sebentar.');
+        return;
+    }
+    if (btn) btn.classList.add('is-busy');
+
+    // Temporarily expand any inner scrollable table wrapper so the FULL table
+    // (not just the visible scrolled part) is captured.
+    const wrappers = target.querySelectorAll('.table-wrapper');
+    const restore = [];
+    wrappers.forEach(w => {
+        const prevMax = w.style.maxHeight;
+        const prevOvf = w.style.overflow;
+        restore.push(() => { w.style.maxHeight = prevMax; w.style.overflow = prevOvf; });
+        w.style.maxHeight = 'none';
+        w.style.overflow = 'visible';
+    });
+
+    const bg = isLightTheme() ? '#eef1f7' : '#07091a';
+    try {
+        const canvas = await html2canvas(target, {
+            backgroundColor: bg,
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            ignoreElements: el => el.classList && el.classList.contains('btn-download'),
+            width: target.scrollWidth,
+            height: target.scrollHeight
+        });
+        const link = document.createElement('a');
+        link.download = makeImageFilename(target) + '.png';
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    } catch (e) {
+        console.error('Gagal membuat gambar:', e);
+        alert('Gagal membuat gambar. Coba lagi.');
+    } finally {
+        restore.forEach(fn => fn());
+        if (btn) btn.classList.remove('is-busy');
+    }
+}
+
+function createDownloadButton(getTarget) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-download';
+    btn.title = 'Download sebagai gambar (PNG)';
+    btn.setAttribute('aria-label', 'Download sebagai gambar');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>PNG</span>';
+    btn.addEventListener('click', () => captureAndDownload(getTarget(), btn));
+    return btn;
+}
+
+// Ensure a chart header has a right-aligned container (keeps the title on the
+// left) so the download button can sit next to the existing tag/tabs.
+function ensureChartHeaderRight(header) {
+    let right = header.querySelector(':scope > .chart-header-right');
+    if (right) return right;
+    right = document.createElement('div');
+    right.className = 'chart-header-right';
+    const kids = Array.from(header.children);
+    kids.slice(1).forEach(k => right.appendChild(k)); // first child = title block
+    header.appendChild(right);
+    return right;
+}
+
+function setupDownloadButtons() {
+    // Charts — one button per chart card (captures the title + chart)
+    document.querySelectorAll('.chart-card').forEach(card => {
+        const header = card.querySelector('.chart-header');
+        if (!header) return;
+        const right = ensureChartHeaderRight(header);
+        right.insertBefore(createDownloadButton(() => card), right.firstChild);
+    });
+
+    // Marketshare per Brand (Analisa Tahunan) — captures the whole table section
+    const msSection = document.querySelector('.marketshare-section:not(.monthly-analysis-section)');
+    if (msSection) {
+        const header = msSection.querySelector('.table-header');
+        const controls = header && header.querySelector('.ms-header-controls');
+        const btn = createDownloadButton(() => msSection);
+        if (controls) controls.insertBefore(btn, controls.firstChild);
+        else if (header) header.appendChild(btn);
+    }
+
+    // Analisa Bulanan — one button per table block (captures title + table [+ donut])
+    document.querySelectorAll('.monthly-table-block').forEach(block => {
+        const titleEl = block.querySelector('.monthly-table-title') || block;
+        const btn = createDownloadButton(() => block);
+        btn.classList.add('btn-download-corner');
+        titleEl.appendChild(btn);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    setupDownloadButtons();
     ['filterTahun', 'filterBulan', 'filterKota', 'filterBrand', 'filterKategori', 'filterDivisi', 'filterProc'].forEach(id => {
         document.getElementById(id).addEventListener('change', applyFilters);
     });

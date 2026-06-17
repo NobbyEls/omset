@@ -1946,3 +1946,60 @@ td.nama-barang {
 
 /* Top 15 Produk Terlaris — Proc dropdown options (avoid dark bg under dark text) */
 [data-theme="light"] .top-prod-select option { background: #ffffff; color: #0f172a; }
+
+
+
+/* =========================================
+   DOWNLOAD-AS-IMAGE BUTTONS
+   ========================================= */
+.btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-medium);
+    color: var(--text-muted);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-download:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.btn-download svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.btn-download.is-busy {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Corner placement for the monthly table blocks (title has no flex right side) */
+.monthly-table-title {
+    position: relative;
+    padding-right: 84px;
+}
+
+.btn-download-corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+@media (max-width: 480px) {
+    .btn-download span { display: none; }
+    .btn-download { padding: 6px 8px; }
+    .monthly-table-title { padding-right: 44px; }
+}
