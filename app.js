@@ -405,11 +405,17 @@ function applyFilters() {
     });
 
     currentPage = 1;
-    updateKPIs();
-    renderCharts();
-    renderMarketshareTable();
-    renderMonthlyAnalysis();
-    populateTopProdProcFilter();
+    // Render each major section independently — a failure in one (e.g. a chart
+    // error) must not stop the others (notably the Analisa Bulanan section).
+    const safeRender = (fn, name) => {
+        try { fn(); }
+        catch (e) { console.error('applyFilters() render failed in:', name, e); }
+    };
+    safeRender(updateKPIs, 'updateKPIs');
+    safeRender(renderCharts, 'renderCharts');
+    safeRender(renderMarketshareTable, 'renderMarketshareTable');
+    safeRender(renderMonthlyAnalysis, 'renderMonthlyAnalysis');
+    safeRender(populateTopProdProcFilter, 'populateTopProdProcFilter');
 }
 
 function resetFilters() {
@@ -1603,9 +1609,15 @@ function getSelectedMonthlyFilter() {
 
 function renderMonthlyAnalysis() {
     const { bulan, tahun } = getSelectedMonthlyFilter();
-    renderMonthlyCategoryTable(bulan, tahun);
-    renderMonthlyBrandKotaTable(bulan, tahun);
-    renderMonthlyBrandTable({
+    // Each sub-table is rendered in isolation so that a failure in one
+    // (e.g. a chart construction error) can never blank the whole section.
+    const safe = (fn, name) => {
+        try { fn(); }
+        catch (e) { console.error('renderMonthlyAnalysis() failed in:', name, e); }
+    };
+    safe(() => renderMonthlyCategoryTable(bulan, tahun), 'CategoryTable');
+    safe(() => renderMonthlyBrandKotaTable(bulan, tahun), 'BrandKotaTable');
+    safe(() => renderMonthlyBrandTable({
         groupField: 'seriProc2',
         label: 'Seri Proc 2',
         bulan, tahun,
@@ -1615,8 +1627,8 @@ function renderMonthlyAnalysis() {
             body: 'monthlyTableBodyW',
             foot: 'monthlyTableFootW'
         }
-    });
-    renderMonthlyBrandTable({
+    }), 'Processor (W)');
+    safe(() => renderMonthlyBrandTable({
         groupField: 'seriProc',
         label: 'Seri Proc',
         sortCoreAlpha: true,
@@ -1627,7 +1639,7 @@ function renderMonthlyAnalysis() {
             body: 'monthlyTableBodyV',
             foot: 'monthlyTableFootV'
         }
-    });
+    }), 'Type Processor (V)');
 }
 
 function renderMonthlyCategoryTable(bulan, tahun) {
