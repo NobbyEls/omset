@@ -2039,3 +2039,39 @@ td.nama-barang {
     color: var(--text-primary);
     font-weight: 700;
 }
+
+
+
+/* =========================================
+   MARKETSHARE PER BRAND PROC (processor brand)
+   ========================================= */
+/* Category buttons styled like .tab-btn but with a distinct class so they
+   don't trigger the brand marketshare category handler. */
+.proc-cat-btn {
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.proc-cat-btn:hover { color: var(--text-primary); }
+.proc-cat-btn.active {
+    background: var(--grad-primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Processor-brand column header colors (dark theme base) */
+.ms-brand-intel { background: rgba(99, 102, 241, 0.15) !important; color: #a5b4fc !important; }
+.ms-brand-amd { background: rgba(244, 63, 94, 0.15) !important; color: #fda4af !important; }
+.ms-brand-snapdragon { background: rgba(245, 158, 11, 0.15) !important; color: #fcd34d !important; }
+
+/* Light-theme overrides for processor-brand columns */
+[data-theme="light"] .ms-brand-intel { color: #3730a3 !important; }
+[data-theme="light"] .ms-brand-amd { color: #9f1239 !important; }
+[data-theme="light"] .ms-brand-snapdragon { color: #92400e !important; }

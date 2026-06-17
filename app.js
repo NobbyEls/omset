@@ -2528,3 +2528,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadData();
 });
+
+
+
+// =========================================================
+// MARKETSHARE PER BRAND PROC (processor brand: Intel / AMD / Apple / Snapdragon)
+// Same format as the brand marketshare table, grouped by the `proc` field.
+// =========================================================
+var currentMSProcCategory = 'all';
+var currentMSProcMetric = 'qty'; // 'qty' | 'value' (total omset)
+var ALLOWED_PROC_BRANDS = ['Intel', 'Amd', 'Apple', 'Snapdragon'];
+
+function renderMarketshareProcTable() {
+    if (!document.getElementById('msProcTableHead')) return;
+    renderMarketshareTableGeneric({
+        groupField: 'proc',
+        allowedValues: ALLOWED_PROC_BRANDS,
+        otherLabel: 'LAINNYA',
+        category: currentMSProcCategory,
+        metric: currentMSProcMetric,
+        elementIds: {
+            yearInfo: 'msProcYearInfo',
+            head: 'msProcTableHead',
+            body: 'msProcTableBody',
+            foot: 'msProcTableFoot'
+        }
+    });
+}
+
+// Render the processor-brand table whenever the brand marketshare table renders
+// (so it stays in sync with the global filters without touching the core flow).
+(function () {
+    if (typeof renderMarketshareTable === 'function') {
+        var _origRenderMarketshareTable = renderMarketshareTable;
+        renderMarketshareTable = function () {
+            var result = _origRenderMarketshareTable.apply(this, arguments);
+            try { renderMarketshareProcTable(); } catch (e) { console.error('renderMarketshareProcTable:', e); }
+            return result;
+        };
+    }
+})();
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Category tabs (Semua / Gaming / Non Gaming)
+    document.querySelectorAll('.proc-cat-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.proc-cat-btn').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentMSProcCategory = btn.dataset.msprocCat;
+            renderMarketshareProcTable();
+        });
+    });
+
+    // Metric toggle (Qty / Value omset)
+    document.querySelectorAll('.chart-tab-btn[data-msproc-metric]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.chart-tab-btn[data-msproc-metric]').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentMSProcMetric = btn.dataset.msprocMetric;
+            renderMarketshareProcTable();
+        });
+    });
+
+    // PNG download button for the processor-brand marketshare section
+    var procTable = document.getElementById('marketshareProcTable');
+    var procSection = procTable ? procTable.closest('.marketshare-section') : null;
+    if (procSection && typeof createDownloadButton === 'function') {
+        var header = procSection.querySelector('.table-header');
+        var controls = header && header.querySelector('.ms-header-controls');
+        var dbtn = createDownloadButton(function () { return procSection; });
+        if (controls) controls.insertBefore(dbtn, controls.firstChild);
+        else if (header) header.appendChild(dbtn);
+    }
+});

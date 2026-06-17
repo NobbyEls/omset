@@ -347,6 +347,35 @@
             </div>
         </section>
 
+        <!-- Marketshare per Brand Proc (processor brand: Intel / AMD / Apple / Snapdragon) -->
+        <section class="table-section marketshare-section">
+            <div class="table-header">
+                <div>
+                    <h3>Marketshare per Brand Proc — Detail Bulanan</h3>
+                    <p class="chart-subtitle">Growth, MoM, YoY, dan estimasi closing per brand processor (Intel, AMD, Apple, Snapdragon). Pilih kategori di tab.</p>
+                </div>
+                <div class="ms-header-controls">
+                    <div class="chart-tabs ms-metric-tabs">
+                        <button class="chart-tab-btn active" data-msproc-metric="qty">Qty</button>
+                        <button class="chart-tab-btn" data-msproc-metric="value">Value</button>
+                    </div>
+                    <div class="tabs">
+                        <button class="proc-cat-btn active" data-msproc-cat="all">Semua</button>
+                        <button class="proc-cat-btn" data-msproc-cat="GAMING">Gaming</button>
+                        <button class="proc-cat-btn" data-msproc-cat="NON GAMING">Non Gaming</button>
+                    </div>
+                </div>
+            </div>
+            <div class="ms-year-info" id="msProcYearInfo"></div>
+            <div class="table-wrapper ms-table-wrap">
+                <table id="marketshareProcTable" class="ms-table">
+                    <thead id="msProcTableHead"></thead>
+                    <tbody id="msProcTableBody"></tbody>
+                    <tfoot id="msProcTableFoot"></tfoot>
+                </table>
+            </div>
+        </section>
+
         <section class="charts-row">
             <div class="chart-card wide">
                 <div class="chart-header">
