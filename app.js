@@ -2236,6 +2236,28 @@ function makeImageFilename(target) {
     return `${base || 'analisa'}-${stamp}`;
 }
 
+// Build a small "label: value (pct%)" breakdown for a donut chart, used only
+// in the exported PNG (donuts have no on-chart labels on screen).
+function buildDonutBreakdownEl(chart) {
+    const ds = chart.data.datasets[0] || {};
+    const data = ds.data || [];
+    const labels = chart.data.labels || [];
+    const colors = ds.backgroundColor;
+    const total = data.reduce((a, b) => a + (Number(b) || 0), 0);
+    const wrap = document.createElement('div');
+    wrap.className = 'dl-donut-breakdown';
+    labels.forEach((lab, i) => {
+        const val = Number(data[i]) || 0;
+        const pct = total > 0 ? (val / total * 100).toFixed(1) : '0.0';
+        const color = Array.isArray(colors) ? (colors[i] || '#64748b') : (colors || '#64748b');
+        const item = document.createElement('span');
+        item.className = 'dl-donut-item';
+        item.innerHTML = `<i style="background:${color}"></i><span>${lab}: <strong>${formatNumber(val)}</strong> (${pct}%)</span>`;
+        wrap.appendChild(item);
+    });
+    return wrap;
+}
+
 // Render a chart card or table block to a PNG and trigger a download.
 async function captureAndDownload(target, btn) {
     if (!target) return;
@@ -2255,6 +2277,23 @@ async function captureAndDownload(target, btn) {
         restore.push(() => { w.style.maxHeight = prevMax; w.style.overflow = prevOvf; });
         w.style.maxHeight = 'none';
         w.style.overflow = 'visible';
+    });
+
+    // Donut charts have no on-chart labels; add a value/percentage breakdown
+    // below each donut so the exported PNG is self-explanatory.
+    Object.values(charts).forEach(ch => {
+        if (!ch || !ch.config || ch.config.type !== 'doughnut' || !ch.canvas) return;
+        if (!target.contains(ch.canvas)) return;
+        const card = ch.canvas.closest('.chart-card');
+        const host = card || ch.canvas.closest('.monthly-cat-chart-col') || ch.canvas.parentElement;
+        if (card) {
+            const prevH = card.style.height;
+            restore.push(() => { card.style.height = prevH; });
+            card.style.height = 'auto'; // let the card grow so the donut isn't squished
+        }
+        const el = buildDonutBreakdownEl(ch);
+        host.appendChild(el);
+        restore.push(() => el.remove());
     });
 
     const bg = isLightTheme() ? '#eef1f7' : '#07091a';

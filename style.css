@@ -2003,3 +2003,39 @@ td.nama-barang {
     .btn-download { padding: 6px 8px; }
     .monthly-table-title { padding-right: 44px; }
 }
+
+
+
+/* Donut value/percentage breakdown (only rendered into the exported PNG) */
+.dl-donut-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 16px 4px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-family: 'Space Grotesk', sans-serif;
+    line-height: 1.4;
+}
+
+.dl-donut-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.dl-donut-item i {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.dl-donut-item strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
