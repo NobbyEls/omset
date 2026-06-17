@@ -320,11 +320,11 @@ function getLatestYear() {
 }
 
 // The year filter has NO "Semua Tahun" option — only individual years,
-// listed newest-first, defaulting to the latest year.
+// listed oldest-first (newest at the bottom), defaulting to the latest year.
 function populateYearFilter() {
     const select = document.getElementById('filterTahun');
     if (!select) return;
-    const years = getUniqueSorted('tahun').map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => b - a);
+    const years = getUniqueSorted('tahun').map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
     select.innerHTML = '';
     years.forEach(y => {
         const o = document.createElement('option');
@@ -332,7 +332,7 @@ function populateYearFilter() {
         o.textContent = String(y);
         select.appendChild(o);
     });
-    if (years.length) select.value = String(years[0]); // default = latest year
+    if (years.length) select.value = String(years[years.length - 1]); // default = latest year (last in list)
 }
 
 function getUniqueSorted(field, customOrder) {
@@ -626,7 +626,17 @@ applyChartThemeColors();
 // legend & tooltip remain active. ChartDataLabels is NOT registered
 // globally, so bar/line/stacked charts never show labels.
 
+// Stamp the currently selected year onto every per-year chart title.
+// Titles of YoY charts (which span all years) are intentionally left alone.
+function updateChartTitleYears() {
+    const year = document.getElementById('filterTahun')?.value || '';
+    document.querySelectorAll('[data-title-year]').forEach(el => {
+        el.textContent = year ? ` — ${year}` : '';
+    });
+}
+
 function renderCharts() {
+    updateChartTitleYears();
     renderTrendChart();
     renderYoYRevenueChart();
     renderYoYBrandChart();
@@ -769,8 +779,9 @@ function renderTrendChart() {
 function renderYoYRevenueChart() {
     destroyChart('yoyRev');
     
+    // Always compares across all years — ignores the year filter (other filters apply).
     const yearMonths = {};
-    filteredData.forEach(d => {
+    filteredDataAllYears.forEach(d => {
         if (!yearMonths[d.tahun]) yearMonths[d.tahun] = {};
         if (!yearMonths[d.tahun][d.bulanName]) yearMonths[d.tahun][d.bulanName] = 0;
         yearMonths[d.tahun][d.bulanName] += d.total;
@@ -819,21 +830,21 @@ function renderYoYRevenueChart() {
 function renderYoYBrandChart() {
     destroyChart('yoyBrand');
     
-    // Top 8 brands aggregated across all years
+    // Top 8 brands aggregated across all years — ignores the year filter (other filters apply).
     const brandTotal = {};
-    filteredData.forEach(d => { brandTotal[d.brand] = (brandTotal[d.brand] || 0) + d.qty; });
+    filteredDataAllYears.forEach(d => { brandTotal[d.brand] = (brandTotal[d.brand] || 0) + d.qty; });
     const topBrands = Object.entries(brandTotal).sort((a, b) => b[1] - a[1]).slice(0, 8).map(s => s[0]);
     
     // Group by brand+year
     const brandYear = {};
     topBrands.forEach(b => brandYear[b] = {});
-    filteredData.forEach(d => {
+    filteredDataAllYears.forEach(d => {
         if (topBrands.includes(d.brand)) {
             brandYear[d.brand][d.tahun] = (brandYear[d.brand][d.tahun] || 0) + d.qty;
         }
     });
     
-    const years = [...new Set(filteredData.map(d => d.tahun))].sort();
+    const years = [...new Set(filteredDataAllYears.map(d => d.tahun))].sort();
     
     const datasets = years.map((year, idx) => {
         const color = YEAR_COLORS[year] || COLORS[idx % COLORS.length];
@@ -867,14 +878,15 @@ function renderYoYBrandChart() {
 function renderYoYKotaChart() {
     destroyChart('yoyKota');
     
+    // Always compares across all years — ignores the year filter (other filters apply).
     const kotaYear = {};
-    filteredData.forEach(d => {
+    filteredDataAllYears.forEach(d => {
         if (!kotaYear[d.cekKota]) kotaYear[d.cekKota] = {};
         kotaYear[d.cekKota][d.tahun] = (kotaYear[d.cekKota][d.tahun] || 0) + d.qty;
     });
     
     const kotas = Object.keys(kotaYear).sort();
-    const years = [...new Set(filteredData.map(d => d.tahun))].sort();
+    const years = [...new Set(filteredDataAllYears.map(d => d.tahun))].sort();
     
     const datasets = years.map((year, idx) => {
         const color = YEAR_COLORS[year] || COLORS[idx % COLORS.length];
