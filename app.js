@@ -1149,102 +1149,11 @@ function renderTopProductsChart() {
     });
 }
 
-function renderProcStackedChart() {
-    destroyChart('procStacked');
-
-    const PROC_BRANDS = ['Intel', 'Amd', 'Apple', 'Snapdragon'];
-    const PROC_COLORS = { Intel: '#6366f1', Amd: '#f43f5e', Apple: '#94a3b8', Snapdragon: '#f59e0b' };
-    const PROC_BORDER_COLORS = { Intel: '#4f46e5', Amd: '#be123c', Apple: '#64748b', Snapdragon: '#d97706' };
-
-    // Filter by category if needed
-    const chartData = currentProcStackedCategory === 'all'
-        ? filteredData
-        : filteredData.filter(d => d.cekGaming === currentProcStackedCategory);
-
-    // Build matrix: month -> proc -> qty
-    const monthProc = {};
-    MONTH_NAMES.forEach(m => {
-        monthProc[m] = {};
-        PROC_BRANDS.forEach(p => monthProc[m][p] = 0);
-    });
-
-    chartData.forEach(d => {
-        if (d.bulanName && PROC_BRANDS.includes(d.proc)) {
-            monthProc[d.bulanName][d.proc] += d.qty;
-        }
-    });
-
-    // Only show months with data
-    const labels = MONTH_NAMES.filter(m => {
-        const total = PROC_BRANDS.reduce((s, p) => s + monthProc[m][p], 0);
-        return total > 0;
-    });
-
-    const datasets = PROC_BRANDS.map(proc => ({
-        label: proc,
-        data: labels.map(m => {
-            const total = PROC_BRANDS.reduce((s, p) => s + monthProc[m][p], 0);
-            return total > 0 ? (monthProc[m][proc] / total) * 100 : 0;
-        }),
-        backgroundColor: PROC_COLORS[proc],
-        borderColor: PROC_BORDER_COLORS[proc],
-        borderRadius: 2,
-        borderSkipped: false
-    }));
-
-    // Pseudo-3D shadow plugin
-    const shadow3DPlugin = {
-        id: 'shadow3D',
-        beforeDatasetsDraw: (chart) => {
-            const ctx = chart.ctx;
-            ctx.save();
-            chart.data.datasets.forEach((ds, dsIdx) => {
-                const meta = chart.getDatasetMeta(dsIdx);
-                if (meta.hidden) return;
-                meta.data.forEach(element => {
-                    const {x, y, width, height, base} = element.getProps(['x', 'y', 'width', 'height', 'base']);
-                    const barHeight = base - y;
-                    if (barHeight <= 0) return;
-                    // Shadow offset behind bars
-                    ctx.fillStyle = (ds.borderColor || ds.backgroundColor) + '44';
-                    ctx.fillRect(x - width / 2 + 5, y - 3, width, barHeight);
-                    // Right-side border for depth
-                    ctx.fillStyle = (ds.borderColor || ds.backgroundColor) + '88';
-                    ctx.fillRect(x + width / 2 + 3, y - 3, 2, barHeight);
-                });
-            });
-            ctx.restore();
-        }
-    };
-
-    charts.procStacked = new Chart(document.getElementById('chartProcStacked'), {
-        type: 'bar',
-        data: { labels, datasets },
-        plugins: [shadow3DPlugin],
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
-            plugins: {
-                legend: { position: 'top', align: 'end' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`
-                    }
-                }
-            },
-            scales: {
-                x: { stacked: true, grid: { display: false } },
-                y: {
-                    stacked: true,
-                    max: 100,
-                    ticks: { callback: v => v + '%' },
-                    grid: { color: gridColor() }
-                }
-            }
-        }
-    });
-}
+// renderProcStackedChart() lives in procview.js — it renders the
+// "Marketshare Brand Processor per Bulan" chart and supports the
+// Bar / Garis / Area chart-type toggle. It uses the globals defined here
+// (filteredData, MONTH_NAMES, charts, destroyChart, gridColor,
+// currentProcStackedCategory).
 
 // =========================================================
 // TABLE
