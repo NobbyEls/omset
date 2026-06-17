@@ -694,6 +694,14 @@ body {
     font-weight: 600;
 }
 
+/* Right-side controls in the marketshare header: metric toggle + category tabs */
+.ms-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .table-controls {
     display: flex;
     gap: 8px;

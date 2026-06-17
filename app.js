@@ -498,6 +498,7 @@ function aggregateBy(data, key, sumField) {
 
 let currentTopProdCategory = 'all';
 let currentTopProdProc = 'all';
+let currentTrendMetric = 'qty'; // 'qty' | 'value' (total omset) for the YoY trend chart
 
 const COLORS = [
     '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#06b6d4',
@@ -640,7 +641,9 @@ function makeBarChart(canvasId, labels, data, label, colors, opts = {}) {
 
 function renderTrendChart() {
     destroyChart('trend');
-    
+
+    const isValue = currentTrendMetric === 'value';
+
     // Group by year+month for trend - separate dataset per year
     const yearMonths = {};
     filteredData.forEach(d => {
@@ -652,13 +655,25 @@ function renderTrendChart() {
     
     const years = Object.keys(yearMonths).sort();
     const labels = MONTH_NAMES;
-    
+
+    // Keep the subtitle in sync with the selected metric
+    const subEl = document.getElementById('trendSubtitle');
+    if (subEl) {
+        subEl.textContent = (isValue
+            ? 'Perbandingan total omset (Juta IDR) per bulan: '
+            : 'Perbandingan unit terjual per bulan: ') + years.join(' vs ');
+    }
+
     const datasets = [];
     years.forEach((year, idx) => {
         const color = YEAR_COLORS[year] || COLORS[idx % COLORS.length];
         datasets.push({
-            label: `${year} - Unit`,
-            data: labels.map(m => yearMonths[year][m] ? yearMonths[year][m].qty : null),
+            label: `${year} - ${isValue ? 'Value' : 'Unit'}`,
+            data: labels.map(m => {
+                const cell = yearMonths[year][m];
+                if (!cell) return null;
+                return isValue ? cell.revenue / 1000000 : cell.qty;
+            }),
             borderColor: color,
             backgroundColor: 'transparent',
             yAxisID: 'y',
@@ -681,11 +696,24 @@ function renderTrendChart() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { position: 'top', align: 'end' } },
+            plugins: {
+                legend: { position: 'top', align: 'end' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            if (ctx.parsed.y == null) return `${ctx.dataset.label}: -`;
+                            return `${ctx.dataset.label}: ` + (isValue
+                                ? formatJutaSmart(ctx.parsed.y)
+                                : formatNumber(ctx.parsed.y) + ' unit');
+                        }
+                    }
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: { display: true, text: 'Unit Terjual' },
+                    title: { display: true, text: isValue ? 'Revenue (Juta IDR)' : 'Unit Terjual' },
+                    ticks: isValue ? { callback: v => formatJutaAxis(v) } : {},
                     grid: { color: gridColor() }
                 },
                 x: { grid: { color: gridColor() } }
@@ -1285,6 +1313,7 @@ function escapeHtml(str) {
 // =========================================================
 
 let currentMSCategory = 'all';
+let currentMSMetric = 'qty'; // 'qty' | 'value' (total omset) for the marketshare table
 let currentProcStackedCategory = 'all';
 
 // Hanya 8 brand yang ditampilkan, sisanya OTHER
@@ -1296,6 +1325,7 @@ function renderMarketshareTable() {
         allowedValues: ALLOWED_BRANDS,
         otherLabel: 'OTHER',
         category: currentMSCategory,
+        metric: currentMSMetric,
         elementIds: {
             yearInfo: 'msYearInfo',
             head: 'msTableHead',
@@ -1306,14 +1336,17 @@ function renderMarketshareTable() {
 }
 
 function renderMarketshareTableGeneric(config) {
-    const { groupField, allowedValues, topN, otherLabel, category, elementIds } = config;
+    const { groupField, allowedValues, topN, otherLabel, category, metric, elementIds } = config;
+    const isValue = metric === 'value';
+    const valField = isValue ? 'total' : 'qty';
+    const fmtV = (n) => isValue ? formatCurrencyShort(n) : formatNumber(n);
     
     const fTahun = document.getElementById('filterTahun').value;
     const targetYear = fTahun !== 'all' ? parseInt(fTahun) : 2026;
     const prevYear = targetYear - 1;
     
     document.getElementById(elementIds.yearInfo).innerHTML = 
-        `<strong>Tahun ${targetYear}</strong> · YoY dibandingkan <strong>${prevYear}</strong> · Kategori: <strong>${category === 'all' ? 'Semua' : category}</strong>`;
+        `<strong>Tahun ${targetYear}</strong> · YoY dibandingkan <strong>${prevYear}</strong> · Kategori: <strong>${category === 'all' ? 'Semua' : category}</strong> · Basis: <strong>${isValue ? 'Value (Omset)' : 'Qty (Unit)'}</strong>`;
     
     const fKota = document.getElementById('filterKota').value;
     const fDivisi = document.getElementById('filterDivisi').value;
@@ -1341,7 +1374,7 @@ function renderMarketshareTableGeneric(config) {
         const valueTotals = {};
         curYearData.forEach(d => {
             const v = d[groupField] || '(kosong)';
-            valueTotals[v] = (valueTotals[v] || 0) + d.qty;
+            valueTotals[v] = (valueTotals[v] || 0) + d[valField];
         });
         const sortedValues = Object.entries(valueTotals).sort((a, b) => b[1] - a[1]);
         const topValues = sortedValues.slice(0, topN || 9).map(s => s[0]);
@@ -1361,7 +1394,7 @@ function renderMarketshareTableGeneric(config) {
     curYearData.forEach(d => {
         const val = displayValues.includes(d[groupField]) ? d[groupField] : '_OTHER';
         if (matrix[d.bulanName]) {
-            matrix[d.bulanName][val] = (matrix[d.bulanName][val] || 0) + d.qty;
+            matrix[d.bulanName][val] = (matrix[d.bulanName][val] || 0) + d[valField];
         }
     });
     
@@ -1370,7 +1403,7 @@ function renderMarketshareTableGeneric(config) {
     MONTH_NAMES.forEach(m => prevMatrix[m] = 0);
     prevYearData.forEach(d => {
         if (prevMatrix[d.bulanName] !== undefined) {
-            prevMatrix[d.bulanName] += d.qty;
+            prevMatrix[d.bulanName] += d[valField];
         }
     });
     
@@ -1447,7 +1480,7 @@ function renderMarketshareTableGeneric(config) {
             <th rowspan="2" class="ms-growth">Growth<br><small>${targetYear} vs ${prevYear}</small></th>
         </tr>
         <tr class="ms-head-2">
-            ${valueWithOther.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            ${valueWithOther.map(() => `<th>${isValue ? 'VALUE' : 'QTY'}</th><th>%</th>`).join('')}
         </tr>
     `;
     
@@ -1462,7 +1495,7 @@ function renderMarketshareTableGeneric(config) {
     prevYearData.forEach(d => {
         if (d.bulanName === 'Des') {
             const val = displayValues.includes(d[groupField]) ? d[groupField] : '_OTHER';
-            prevYearDecMatrix[val] = (prevYearDecMatrix[val] || 0) + d.qty;
+            prevYearDecMatrix[val] = (prevYearDecMatrix[val] || 0) + d[valField];
         }
     });
     const prevYearDecTotal = Object.values(prevYearDecMatrix).reduce((a, b) => a + b, 0);
@@ -1506,7 +1539,7 @@ function renderMarketshareTableGeneric(config) {
         if (estimasiClosing !== null) {
             const maxDay = monthMaxDay[month];
             const totalDays = daysInMonth(idx, targetYear);
-            estHtml = `<strong>${formatNumber(estimasiClosing)}</strong><small class="est-detail">${maxDay}/${totalDays} hari</small>`;
+            estHtml = `<strong>${fmtV(estimasiClosing)}</strong><small class="est-detail">${maxDay}/${totalDays} hari</small>`;
         }
         
         const growthCell = idx === 0 
@@ -1527,11 +1560,11 @@ function renderMarketshareTableGeneric(config) {
                     prevMonthPct[v] = pct;
                 }
                 return `
-                    <td class="ms-qty">${hasData ? formatNumber(qty) : '&nbsp;'}</td>
+                    <td class="ms-qty">${hasData ? fmtV(qty) : '&nbsp;'}</td>
                     <td class="ms-pct">${pctHtml}</td>
                 `;
             }).join('')}
-            <td class="ms-total-cell"><strong>${hasData ? formatNumber(monthGrandTotal) : '&nbsp;'}</strong></td>
+            <td class="ms-total-cell"><strong>${hasData ? fmtV(monthGrandTotal) : '&nbsp;'}</strong></td>
             <td class="ms-mom-cell">${momHtml}</td>
             <td class="ms-yoy-cell">${yoyHtml}</td>
             <td class="ms-est-cell">${estHtml}</td>
@@ -1557,9 +1590,9 @@ function renderMarketshareTableGeneric(config) {
         ${valueWithOther.map(v => {
             const qty = grandPerValue[v];
             const pct = grandSum > 0 ? (qty / grandSum) * 100 : 0;
-            return `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td><td class="ms-pct"><strong>${pct.toFixed(2)}%</strong></td>`;
+            return `<td class="ms-qty"><strong>${fmtV(qty)}</strong></td><td class="ms-pct"><strong>${pct.toFixed(2)}%</strong></td>`;
         }).join('')}
-        <td class="ms-total-cell"><strong>${formatNumber(grandSum)}</strong></td>
+        <td class="ms-total-cell"><strong>${fmtV(grandSum)}</strong></td>
         <td class="ms-mom-cell">&nbsp;</td>
         <td class="ms-yoy-cell">&nbsp;</td>
         <td class="ms-est-cell">&nbsp;</td>
@@ -2233,6 +2266,26 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             currentMSCategory = btn.dataset.cat;
             renderMarketshareTable();
+        });
+    });
+
+    // Marketshare metric toggle (Qty / Value omset) — beside the category tabs
+    document.querySelectorAll('.chart-tab-btn[data-ms-metric]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.chart-tab-btn[data-ms-metric]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMSMetric = btn.dataset.msMetric;
+            renderMarketshareTable();
+        });
+    });
+
+    // Trend chart metric toggle (Qty / Value omset) — beside the YoY · Trend tag
+    document.querySelectorAll('.chart-tab-btn[data-trend-metric]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.chart-tab-btn[data-trend-metric]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTrendMetric = btn.dataset.trendMetric;
+            renderTrendChart();
         });
     });
 

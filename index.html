@@ -197,9 +197,15 @@
                 <div class="chart-header">
                     <div>
                         <h3>Trend Penjualan Bulanan — Year over Year</h3>
-                        <p class="chart-subtitle">Perbandingan unit terjual per bulan: 2024 vs 2025 vs 2026</p>
+                        <p class="chart-subtitle" id="trendSubtitle">Perbandingan unit terjual per bulan: 2024 vs 2025 vs 2026</p>
                     </div>
-                    <span class="chart-tag tag-blue">YoY · Trend</span>
+                    <div class="chart-header-right">
+                        <div class="chart-tabs">
+                            <button class="chart-tab-btn active" data-trend-metric="qty">Qty</button>
+                            <button class="chart-tab-btn" data-trend-metric="value">Value</button>
+                        </div>
+                        <span class="chart-tag tag-blue">YoY · Trend</span>
+                    </div>
                 </div>
                 <canvas id="chartTrend"></canvas>
             </div>
@@ -212,10 +218,16 @@
                     <h3>Marketshare per Brand — Detail Bulanan</h3>
                     <p class="chart-subtitle">Growth, MoM, YoY, dan estimasi closing per brand. Pilih kategori di tab.</p>
                 </div>
-                <div class="tabs">
-                    <button class="tab-btn active" data-cat="all">Semua</button>
-                    <button class="tab-btn" data-cat="GAMING">Gaming</button>
-                    <button class="tab-btn" data-cat="NON GAMING">Non Gaming</button>
+                <div class="ms-header-controls">
+                    <div class="chart-tabs ms-metric-tabs">
+                        <button class="chart-tab-btn active" data-ms-metric="qty">Qty</button>
+                        <button class="chart-tab-btn" data-ms-metric="value">Value</button>
+                    </div>
+                    <div class="tabs">
+                        <button class="tab-btn active" data-cat="all">Semua</button>
+                        <button class="tab-btn" data-cat="GAMING">Gaming</button>
+                        <button class="tab-btn" data-cat="NON GAMING">Non Gaming</button>
+                    </div>
                 </div>
             </div>
             <div class="ms-year-info" id="msYearInfo"></div>
