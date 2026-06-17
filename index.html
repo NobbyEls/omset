@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=20260618">
+    <link rel="stylesheet" href="style.css?v=20260617">
     <script>
         // Apply saved theme before first paint to avoid a flash of the wrong theme.
         (function () {
@@ -135,11 +135,54 @@
             </button>
         </section>
 
+        <!-- Monthly Filters (Analisa Bulanan) -->
+        <section class="filters-section monthly-filters-section hidden" id="monthlyFiltersBar">
+            <div class="filters-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </div>
+            <div class="monthly-filter-wrap">
+                <div class="monthly-category-tabs">
+                    <button class="monthly-cat-btn active" data-monthly-cat="all">Semua</button>
+                    <button class="monthly-cat-btn" data-monthly-cat="GAMING">Gaming</button>
+                    <button class="monthly-cat-btn" data-monthly-cat="NON GAMING">Non Gaming</button>
+                </div>
+                <div class="filter-group monthly-filter-group">
+                    <label>Bulan</label>
+                    <select id="filterBulanMonthly">
+                        <option value="Jan">Jan</option>
+                        <option value="Feb">Feb</option>
+                        <option value="Mar">Mar</option>
+                        <option value="Apr">Apr</option>
+                        <option value="Mei">Mei</option>
+                        <option value="Jun">Jun</option>
+                        <option value="Jul">Jul</option>
+                        <option value="Agu">Agu</option>
+                        <option value="Sep">Sep</option>
+                        <option value="Okt">Okt</option>
+                        <option value="Nov">Nov</option>
+                        <option value="Des">Des</option>
+                    </select>
+                </div>
+                <div class="filter-group monthly-filter-group">
+                    <label>Tahun</label>
+                    <select id="filterTahunMonthly">
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
         <!-- Main Navigation Tabs -->
         <nav class="main-nav-tabs">
             <button class="main-tab active" data-tab="tabTahunan">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 6-12"/></svg>
                 Analisa Tahunan
+            </button>
+            <button class="main-tab" data-tab="tabBulanan">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Analisa Bulanan
             </button>
         </nav>
         </div><!-- /sticky-top-group -->
@@ -421,7 +464,93 @@
         </div><!-- /tabTahunan -->
 
         <!-- Tab Content: Analisa Bulanan -->
-        <div id="tabBulanan" class="tab-content hidden"></div><!-- /tabBulanan -->
+        <div id="tabBulanan" class="tab-content">
+
+        <!-- Monthly Analysis Section - Processor per Brand -->
+        <section class="table-section marketshare-section monthly-analysis-section">
+            <div class="table-header">
+                <div>
+                    <h3>Analisa Bulanan — Processor per Brand</h3>
+                    <p class="chart-subtitle">Marketshare prosesor per brand laptop, dengan perbandingan MoM dan YoY. Filter bulan independen.</p>
+                </div>
+            </div>
+
+            <!-- Table: Penjualan per Brand — Gaming vs Non Gaming -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Penjualan per Brand — Gaming vs Non Gaming</h4>
+                    <p class="chart-subtitle">QTY dan % per brand, dipecah kategori Gaming / Non Gaming.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoCategory"></div>
+                <div class="monthly-cat-layout">
+                    <div class="monthly-cat-table-col">
+                        <div class="table-wrapper ms-table-wrap">
+                            <table id="monthlyTableCategory" class="ms-table monthly-kota-table">
+                                <thead id="monthlyTableHeadCategory"></thead>
+                                <tbody id="monthlyTableBodyCategory"></tbody>
+                                <tfoot id="monthlyTableFootCategory"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="monthly-cat-chart-col">
+                        <div class="monthly-cat-chart-title">Porsi Total per Brand (%)</div>
+                        <div class="monthly-cat-chart-canvas">
+                            <canvas id="chartMonthlyCategory"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table 0: Penjualan per Brand & Kota -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Penjualan per Brand &amp; Kota</h4>
+                    <p class="chart-subtitle">QTY dan % per brand per kota, dengan YoY comparison.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoBrand"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableBrand" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadBrand"></thead>
+                        <tbody id="monthlyTableBodyBrand"></tbody>
+                        <tfoot id="monthlyTableFootBrand"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 1: Seri Proc 2 (kolom W) x Brand -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Penjualan by Brand &amp; Processor</h4>
+                    <p class="chart-subtitle">Group: Core i7/Core 7/Ultra 7, Ryzen 5/Ryzen AI 5, dll.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoW"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableW" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadW"></thead>
+                        <tbody id="monthlyTableBodyW"></tbody>
+                        <tfoot id="monthlyTableFootW"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table 2: Seri Proc (kolom V) x Brand -->
+            <div class="monthly-table-block">
+                <div class="monthly-table-title">
+                    <h4>Penjualan by Brand &amp; Type Processor</h4>
+                    <p class="chart-subtitle">Group: Core i7, Core i5, Ryzen 5, Ultra 5, dll.</p>
+                </div>
+                <div class="ms-year-info" id="monthlyInfoV"></div>
+                <div class="table-wrapper ms-table-wrap">
+                    <table id="monthlyTableV" class="ms-table monthly-kota-table">
+                        <thead id="monthlyTableHeadV"></thead>
+                        <tbody id="monthlyTableBodyV"></tbody>
+                        <tfoot id="monthlyTableFootV"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        </div><!-- /tabBulanan -->
 
         <!-- Footer -->
         <footer class="footer">
@@ -440,7 +569,7 @@
         </footer>
     </div>
 
-    <script src="procview.js?v=20260618"></script>
-    <script src="app.js?v=20260618"></script>
+    <script src="procview.js?v=20260617"></script>
+    <script src="app.js?v=20260617"></script>
 </body>
 </html>

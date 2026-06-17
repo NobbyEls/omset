@@ -23,6 +23,7 @@ let currentPage = 1;
 const rowsPerPage = 25;
 let charts = {};
 let cacheStatus = { 2024: 'unknown', 2025: 'unknown', 2026: 'unknown' };
+let currentMonthlyCategory = 'all';
 
 // Bulan ordering (without year - normalized)
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -204,6 +205,7 @@ async function loadData(forceRefresh = false) {
         await new Promise(r => setTimeout(r, 200));
         
         populateFilters();
+        initMonthlyFilter();
         applyFilters();
         updateLastUpdate();
         updateCacheStatusUI();
@@ -403,7 +405,8 @@ function applyFilters() {
     });
 
     currentPage = 1;
-    // Render each major section independently — a failure in one cannot stop the others.
+    // Render each major section independently — a failure in one (e.g. a chart
+    // error) must not stop the others (notably the Analisa Bulanan section).
     const safeRender = (fn, name) => {
         try { fn(); }
         catch (e) { console.error('applyFilters() render failed in:', name, e); }
@@ -411,6 +414,8 @@ function applyFilters() {
     safeRender(updateKPIs, 'updateKPIs');
     safeRender(renderCharts, 'renderCharts');
     safeRender(renderMarketshareTable, 'renderMarketshareTable');
+    safeRender(renderMonthlyAnalysis, 'renderMonthlyAnalysis');
+    safeRender(populateTopProdProcFilter, 'populateTopProdProcFilter');
 }
 
 function resetFilters() {
@@ -424,6 +429,36 @@ function resetFilters() {
     const searchEl = document.getElementById('searchTable');
     if (searchEl) searchEl.value = '';
     applyFilters();
+}
+
+function getProcBrandGroup(seriProc) {
+    if (!seriProc) return 4;
+    const lower = seriProc.toLowerCase();
+    if (lower.includes('apple') || /^a\d{2}/i.test(seriProc) || /^m\d/i.test(seriProc)) return 0;
+    if (lower.includes('snapdragon')) return 1;
+    if (lower.includes('ryzen') || lower.includes('athlon') || lower.includes('amd')) return 2;
+    return 3;
+}
+
+function populateTopProdProcFilter() {
+    const select = document.getElementById('filterTopProdProc');
+    if (!select) return;
+    const currentValue = select.value;
+    const uniqueProcs = [...new Set(filteredData.map(d => d.seriProc).filter(Boolean))];
+    uniqueProcs.sort((a, b) => {
+        const aGroup = getProcBrandGroup(a);
+        const bGroup = getProcBrandGroup(b);
+        if (aGroup !== bGroup) return aGroup - bGroup;
+        return a.localeCompare(b);
+    });
+    const firstOption = '<option value="all">Semua Proc</option>';
+    select.innerHTML = firstOption + uniqueProcs.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    if (uniqueProcs.includes(currentValue)) {
+        select.value = currentValue;
+    } else {
+        select.value = 'all';
+        currentTopProdProc = 'all';
+    }
 }
 
 // =========================================================
@@ -510,6 +545,7 @@ function aggregateBy(data, key, sumField) {
 // =========================================================
 
 let currentTopProdCategory = 'all';
+let currentTopProdProc = 'all';
 let currentTrendMetric = 'qty'; // 'qty' | 'value' (total omset) for the YoY trend chart
 
 const COLORS = [
@@ -558,6 +594,7 @@ function setTheme(theme) {
     // Re-render charts so baked-in colors (grid, ticks, tooltip) match the theme.
     if (filteredData && filteredData.length) {
         renderCharts();
+        renderMonthlyAnalysis();
     }
 }
 
@@ -1135,6 +1172,9 @@ function renderTopProductsChart() {
     if (currentTopProdCategory !== 'all') {
         topProdData = topProdData.filter(d => d.cekGaming === currentTopProdCategory);
     }
+    if (currentTopProdProc !== 'all') {
+        topProdData = topProdData.filter(d => d.seriProc === currentTopProdProc);
+    }
     
     const data = aggregateBy(topProdData, 'namaBarang', 'qty');
     const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 15);
@@ -1531,8 +1571,554 @@ function renderMarketshareTableGeneric(config) {
 }
 
 // =========================================================
-// FORMATTING
+// MONTHLY ANALYSIS - Brand per Kota & Processor per Brand (MoM & YoY)
 // =========================================================
+
+const KOTA_LIST = ['YGY', 'SLO', 'PWT', 'SMG', 'TGL', 'BBS', 'MDN'];
+
+// Laptop brands shown as columns; anything outside ALLOWED_BRANDS rolls up into OTHER
+const BRAND_LIST = ['ASUS', 'LENOVO', 'ACER', 'APPLE', 'AXIOO', 'ADVAN', 'HP', 'MSI', 'OTHER'];
+
+// Brand colors matching the marketshare table header tints
+const BRAND_COLORS = {
+    ASUS: '#f59e0b', LENOVO: '#10b981', ACER: '#94a3b8', APPLE: '#a8a29e',
+    AXIOO: '#6366f1', ADVAN: '#fb923c', HP: '#f43f5e', MSI: '#3b82f6', OTHER: '#a855f7'
+};
+
+function getBrandGroup(brand) {
+    return ALLOWED_BRANDS.includes(brand) ? brand : 'OTHER';
+}
+
+function initMonthlyFilter() {
+    // Set default to latest month with data in latest year
+    const latestYear = Math.max(...DATA_SOURCES.map(s => s.year));
+    const latestYearData = allData.filter(d => d.tahun === latestYear);
+    let lastMonth = 'Jan';
+    MONTH_NAMES.forEach(m => {
+        if (latestYearData.some(d => d.bulanName === m)) lastMonth = m;
+    });
+    document.getElementById('filterBulanMonthly').value = lastMonth;
+    document.getElementById('filterTahunMonthly').value = String(latestYear);
+}
+
+function getSelectedMonthlyFilter() {
+    const bulan = document.getElementById('filterBulanMonthly').value;
+    const tahun = parseInt(document.getElementById('filterTahunMonthly').value);
+    return { bulan, tahun };
+}
+
+function renderMonthlyAnalysis() {
+    const { bulan, tahun } = getSelectedMonthlyFilter();
+    // Each sub-table is rendered in isolation so that a failure in one
+    // (e.g. a chart construction error) can never blank the whole section.
+    const safe = (fn, name) => {
+        try { fn(); }
+        catch (e) { console.error('renderMonthlyAnalysis() failed in:', name, e); }
+    };
+    safe(() => renderMonthlyCategoryTable(bulan, tahun), 'CategoryTable');
+    safe(() => renderMonthlyBrandKotaTable(bulan, tahun), 'BrandKotaTable');
+    safe(() => renderMonthlyBrandTable({
+        groupField: 'seriProc2',
+        label: 'Seri Proc 2',
+        bulan, tahun,
+        elementIds: {
+            info: 'monthlyInfoW',
+            head: 'monthlyTableHeadW',
+            body: 'monthlyTableBodyW',
+            foot: 'monthlyTableFootW'
+        }
+    }), 'Processor (W)');
+    safe(() => renderMonthlyBrandTable({
+        groupField: 'seriProc',
+        label: 'Seri Proc',
+        sortCoreAlpha: true,
+        bulan, tahun,
+        elementIds: {
+            info: 'monthlyInfoV',
+            head: 'monthlyTableHeadV',
+            body: 'monthlyTableBodyV',
+            foot: 'monthlyTableFootV'
+        }
+    }), 'Type Processor (V)');
+}
+
+function renderMonthlyCategoryTable(bulan, tahun) {
+    const infoEl = document.getElementById('monthlyInfoCategory');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Gaming vs Non Gaming per Brand`;
+
+    // This table shows the Gaming/Non-Gaming split, so it ignores the
+    // category filter (always shows both columns).
+    const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan);
+
+    const mx = {};
+    BRAND_LIST.forEach(b => { mx[b] = { g: 0, n: 0 }; });
+    data.forEach(d => {
+        const b = getBrandGroup(d.brand);
+        if (!mx[b]) return;
+        if (d.cekGaming === 'GAMING') mx[b].g += d.qty;
+        else if (d.cekGaming === 'NON GAMING') mx[b].n += d.qty;
+    });
+
+    const totG = BRAND_LIST.reduce((s, b) => s + mx[b].g, 0);
+    const totN = BRAND_LIST.reduce((s, b) => s + mx[b].n, 0);
+    const grand = totG + totN;
+
+    const rows = BRAND_LIST.slice().sort((a, b) => (mx[b].g + mx[b].n) - (mx[a].g + mx[a].n));
+
+    const head = document.getElementById('monthlyTableHeadCategory');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Brand</th>
+            <th colspan="2" class="ms-kota-header">Gaming</th>
+            <th colspan="2" class="ms-kota-header">Non Gaming</th>
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            <th>QTY</th><th>%</th>
+            <th>QTY</th><th>%</th>
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    const body = document.getElementById('monthlyTableBodyCategory');
+    let html = '';
+    rows.forEach(brand => {
+        const g = mx[brand].g, n = mx[brand].n, t = g + n;
+        const gPct = totG > 0 ? (g / totG) * 100 : 0;
+        const nPct = totN > 0 ? (n / totN) * 100 : 0;
+        const tPct = grand > 0 ? (t / grand) * 100 : 0;
+        html += `<tr>`;
+        html += `<td class="ms-bulan-cell"><strong>${escapeHtml(brand)}</strong></td>`;
+        html += `<td class="ms-qty">${g > 0 ? formatNumber(g) : '-'}</td>`;
+        html += `<td class="ms-pct-white">${g > 0 ? gPct.toFixed(2) + '%' : '-'}</td>`;
+        html += `<td class="ms-qty">${n > 0 ? formatNumber(n) : '-'}</td>`;
+        html += `<td class="ms-pct-white">${n > 0 ? nPct.toFixed(2) + '%' : '-'}</td>`;
+        html += `<td class="ms-qty"><strong>${t > 0 ? formatNumber(t) : '-'}</strong></td>`;
+        html += `<td class="ms-pct-white"><strong>${t > 0 ? tPct.toFixed(2) + '%' : '-'}</strong></td>`;
+        html += `</tr>`;
+    });
+
+    const gGrand = grand > 0 ? (totG / grand) * 100 : 0;
+    const nGrand = grand > 0 ? (totN / grand) * 100 : 0;
+    html += `<tr class="ms-grand-row">`;
+    html += `<td><strong>Grand Total</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(totG)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>${gGrand.toFixed(2)}%</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(totN)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>${nGrand.toFixed(2)}%</strong></td>`;
+    html += `<td class="ms-qty"><strong>${formatNumber(grand)}</strong></td>`;
+    html += `<td class="ms-pct-white"><strong>100.00%</strong></td>`;
+    html += `</tr>`;
+    body.innerHTML = html;
+
+    document.getElementById('monthlyTableFootCategory').innerHTML = '';
+
+    // Donut chart: each brand's share, following the active category filter
+    // (Semua = total, Gaming = gaming only, Non Gaming = non-gaming only).
+    const catSel = currentMonthlyCategory;
+    const brandVal = (b) => catSel === 'GAMING' ? mx[b].g : (catSel === 'NON GAMING' ? mx[b].n : (mx[b].g + mx[b].n));
+    const catLabel = catSel === 'GAMING' ? 'Gaming' : (catSel === 'NON GAMING' ? 'Non Gaming' : 'Total');
+    const titleEl = document.querySelector('.monthly-cat-chart-title');
+    if (titleEl) titleEl.textContent = `Porsi ${catLabel} per Brand (%)`;
+    const chartBrands = rows.filter(b => brandVal(b) > 0).sort((a, b) => brandVal(b) - brandVal(a));
+    destroyChart('monthlyCategory');
+    const catCanvas = document.getElementById('chartMonthlyCategory');
+    if (catCanvas && typeof Chart !== 'undefined') {
+        charts.monthlyCategory = new Chart(catCanvas, {
+            type: 'doughnut',
+            plugins: [ChartDataLabels],
+            data: {
+                labels: chartBrands,
+                datasets: [{
+                    data: chartBrands.map(b => brandVal(b)),
+                    backgroundColor: chartBrands.map(b => BRAND_COLORS[b] || '#64748b'),
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '58%',
+                layout: { padding: { top: 30, right: 24, bottom: 30, left: 24 } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: c => {
+                                const tot = c.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = tot > 0 ? ((c.raw / tot) * 100).toFixed(2) : '0';
+                                return `${c.label}: ${formatNumber(c.raw)} (${pct}%)`;
+                            }
+                        }
+                    },
+                    datalabels: { display: false }
+                }
+            }
+        });
+    }
+}
+
+function renderMonthlyBrandKotaTable(bulan, tahun) {
+    const prevYear = tahun - 1;
+
+    // Info bar
+    const infoEl = document.getElementById('monthlyInfoBrand');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong>`;
+
+    // Current month data
+    const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Same month previous year (for YoY)
+    const yoyData = allData.filter(d => d.tahun === prevYear && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+
+    // Build qty matrices: brand x kota
+    function buildBrandMatrix(data) {
+        const mx = {};
+        BRAND_LIST.forEach(b => {
+            mx[b] = {};
+            KOTA_LIST.forEach(k => mx[b][k] = 0);
+        });
+        data.forEach(d => {
+            const b = getBrandGroup(d.brand);
+            if (mx[b] && KOTA_LIST.includes(d.cekKota)) {
+                mx[b][d.cekKota] += d.qty;
+            }
+        });
+        return mx;
+    }
+
+    const curMatrix = buildBrandMatrix(curData);
+    const yoyMatrix = buildBrandMatrix(yoyData);
+
+    // Grand totals per kota
+    const curKotaTotals = {};
+    const yoyKotaTotals = {};
+    KOTA_LIST.forEach(k => {
+        curKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + curMatrix[b][k], 0);
+        yoyKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + yoyMatrix[b][k], 0);
+    });
+
+    const curGrandTotal = KOTA_LIST.reduce((s, k) => s + curKotaTotals[k], 0);
+    const yoyGrandTotal = KOTA_LIST.reduce((s, k) => s + yoyKotaTotals[k], 0);
+
+    // HEAD
+    const head = document.getElementById('monthlyTableHeadBrand');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Brand</th>
+            ${KOTA_LIST.map(k => `<th colspan="2" class="ms-kota-header">${k}</th>`).join('')}
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            ${KOTA_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    // BODY
+    const body = document.getElementById('monthlyTableBodyBrand');
+    let bodyHtml = '';
+
+    // Pre-compute all % values for color scale (data rows only)
+    const allPctsBrand = [];
+    BRAND_LIST.forEach(brand => {
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+        if (rowPct > 0) allPctsBrand.push(rowPct);
+        KOTA_LIST.forEach(kota => {
+            const qty = curMatrix[brand][kota];
+            const kotaTotal = curKotaTotals[kota];
+            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
+            if (pct > 0) allPctsBrand.push(pct);
+        });
+    });
+    const maxPctBrand = allPctsBrand.length > 0 ? Math.max(...allPctsBrand) : 1;
+
+    function pctBgStyle(pct) {
+        if (pct <= 0) return '';
+        const intensity = (pct / maxPctBrand) * 0.4;
+        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
+    }
+
+    BRAND_LIST.forEach(brand => {
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+
+        bodyHtml += `<tr>`;
+        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(brand)}</strong></td>`;
+
+        KOTA_LIST.forEach(kota => {
+            const qty = curMatrix[brand][kota];
+            const kotaTotal = curKotaTotals[kota];
+            const pct = kotaTotal > 0 ? (qty / kotaTotal) * 100 : 0;
+            bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
+            bodyHtml += `<td class="ms-pct-white"${pctBgStyle(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
+        });
+
+        // Total column
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(rowTotal)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"${pctBgStyle(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
+        bodyHtml += `</tr>`;
+    });
+
+    // Total row (above YoY)
+    bodyHtml += `<tr class="ms-grand-row">`;
+    bodyHtml += `<td><strong>Total</strong></td>`;
+    KOTA_LIST.forEach(kota => {
+        const qty = curKotaTotals[kota];
+        const pct = curGrandTotal > 0 ? (qty / curGrandTotal) * 100 : 0;
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"><strong>${pct.toFixed(1)}%</strong></td>`;
+    });
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong></td>`;
+    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    bodyHtml += `</tr>`;
+
+    body.innerHTML = bodyHtml;
+
+    // FOOTER (empty now - total moved to body)
+    const foot = document.getElementById('monthlyTableFootBrand');
+    foot.innerHTML = '';
+}
+
+function renderMonthlyBrandTable(config) {
+    const { groupField, label, bulan, tahun, elementIds, sortCoreAlpha } = config;
+    const prevYear = tahun - 1;
+    const monthIdx = MONTH_NAMES.indexOf(bulan);
+    const prevMonthIdx = monthIdx - 1;
+    const prevMonthName = prevMonthIdx >= 0 ? MONTH_NAMES[prevMonthIdx] : 'Des';
+    const prevMonthYear = prevMonthIdx >= 0 ? tahun : tahun - 1;
+
+    // Info bar
+    const infoEl = document.getElementById(elementIds.info);
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong>`;
+
+    // Current month data
+    const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Previous month data (for MoM)
+    const prevMonthData = allData.filter(d => d.tahun === prevMonthYear && d.bulanName === prevMonthName && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Same month previous year (for YoY)
+    const yoyData = allData.filter(d => d.tahun === prevYear && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+
+    // Get unique proc values sorted by total qty desc
+    const procTotals = {};
+    curData.forEach(d => {
+        const v = d[groupField] || '(kosong)';
+        procTotals[v] = (procTotals[v] || 0) + d.qty;
+    });
+    // Also include from prev/yoy data for completeness
+    prevMonthData.forEach(d => {
+        const v = d[groupField] || '(kosong)';
+        if (!procTotals[v]) procTotals[v] = 0;
+    });
+    yoyData.forEach(d => {
+        const v = d[groupField] || '(kosong)';
+        if (!procTotals[v]) procTotals[v] = 0;
+    });
+
+    // Build proc brand lookup from actual data (kolom U / proc field)
+    const procBrandLookup = {};
+    curData.concat(prevMonthData).concat(yoyData).forEach(d => {
+        const v = d[groupField] || '';
+        const u = d.proc || '';
+        if (v && u && !procBrandLookup[v]) {
+            procBrandLookup[v] = u;
+        }
+    });
+
+    // Sort order: Apple first, then Snapdragon, then AMD (Athlon<Ryzen3<Ryzen5<Ryzen7), then Intel (Celeron<Core3<Corei3<Corei5<Corei7<Corei9<Ultra5<Ultra7)
+    const PROC_BRAND_ORDER = ['Apple', 'Snapdragon', 'Amd', 'Intel'];
+    
+    const AMD_TIER_ORDER = ['athlon', 'ryzen 3', 'ryzen 5', 'ryzen 7', 'ryzen 9', 'ryzen ai'];
+    const INTEL_TIER_ORDER = ['celeron', 'pentium', 'n series', 'core 3', 'core i3', 'core i5', 'core 5', 'core i7', 'core 7', 'core i9', 'ultra 5', 'ultra 7', 'ultra 9'];
+    
+    function getProcBrandGroup(procValue) {
+        // Use actual data from kolom U (Proc) first
+        const fromData = procBrandLookup[procValue];
+        if (fromData) {
+            const normalized = fromData.charAt(0).toUpperCase() + fromData.slice(1).toLowerCase();
+            if (PROC_BRAND_ORDER.includes(normalized)) return normalized;
+        }
+        // Fallback: guess from name
+        const lower = procValue.toLowerCase();
+        if (lower.includes('apple') || lower.includes(' m1') || lower.includes(' m2') || lower.includes(' m3') || lower.includes(' m4')) return 'Apple';
+        if (lower.includes('snapdragon')) return 'Snapdragon';
+        if (lower.includes('ryzen') || lower.includes('athlon') || lower.includes('amd')) return 'Amd';
+        return 'Intel';
+    }
+    
+    function getProcTierIndex(procValue, brand) {
+        const lower = procValue.toLowerCase();
+        if (brand === 'Amd') {
+            for (let i = 0; i < AMD_TIER_ORDER.length; i++) {
+                if (lower.includes(AMD_TIER_ORDER[i])) return i;
+            }
+            return AMD_TIER_ORDER.length;
+        }
+        if (brand === 'Intel') {
+            for (let i = 0; i < INTEL_TIER_ORDER.length; i++) {
+                if (lower.includes(INTEL_TIER_ORDER[i])) return i;
+            }
+            return INTEL_TIER_ORDER.length;
+        }
+        return 0;
+    }
+
+    const procValues = Object.entries(procTotals)
+        .filter(([k, v]) => k && k !== '(kosong)' && v > 0)
+        .sort((a, b) => {
+            const brandA = getProcBrandGroup(a[0]);
+            const brandB = getProcBrandGroup(b[0]);
+            const groupA = PROC_BRAND_ORDER.indexOf(brandA);
+            const groupB = PROC_BRAND_ORDER.indexOf(brandB);
+            if (groupA !== groupB) return groupA - groupB;
+            // Kolom V: seri proc yang diawali "Core" diurutkan alfabetis (numeric-aware)
+            if (sortCoreAlpha) {
+                const aCore = a[0].toLowerCase().startsWith('core');
+                const bCore = b[0].toLowerCase().startsWith('core');
+                if (aCore && bCore) {
+                    return a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' });
+                }
+            }
+            const tierA = getProcTierIndex(a[0], brandA);
+            const tierB = getProcTierIndex(b[0], brandB);
+            if (tierA !== tierB) return tierA - tierB;
+            return b[1] - a[1];
+        })
+        .map(([k]) => k);
+
+    // Build qty matrices: proc x brand
+    function buildMatrix(data) {
+        const mx = {};
+        procValues.forEach(p => {
+            mx[p] = {};
+            BRAND_LIST.forEach(b => mx[p][b] = 0);
+        });
+        data.forEach(d => {
+            const v = d[groupField] || '(kosong)';
+            const b = getBrandGroup(d.brand);
+            if (mx[v] && mx[v][b] !== undefined) {
+                mx[v][b] += d.qty;
+            }
+        });
+        return mx;
+    }
+
+    const curMatrix = buildMatrix(curData);
+    const prevMMatrix = buildMatrix(prevMonthData);
+    const yoyMatrix = buildMatrix(yoyData);
+
+    // Grand totals per brand
+    const curBrandTotals = {};
+    const prevMBrandTotals = {};
+    const yoyBrandTotals = {};
+    BRAND_LIST.forEach(b => {
+        curBrandTotals[b] = procValues.reduce((s, p) => s + curMatrix[p][b], 0);
+        prevMBrandTotals[b] = procValues.reduce((s, p) => s + prevMMatrix[p][b], 0);
+        yoyBrandTotals[b] = procValues.reduce((s, p) => s + yoyMatrix[p][b], 0);
+    });
+
+    const curGrandTotal = BRAND_LIST.reduce((s, b) => s + curBrandTotals[b], 0);
+    const prevMGrandTotal = BRAND_LIST.reduce((s, b) => s + prevMBrandTotals[b], 0);
+    const yoyGrandTotal = BRAND_LIST.reduce((s, b) => s + yoyBrandTotals[b], 0);
+
+    // HEAD
+    const head = document.getElementById(elementIds.head);
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Proc</th>
+            <th rowspan="2" class="ms-bulan">${label}</th>
+            ${BRAND_LIST.map(b => `<th colspan="2" class="ms-kota-header">${b}</th>`).join('')}
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            ${BRAND_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    // BODY
+    const body = document.getElementById(elementIds.body);
+    let bodyHtml = '';
+
+    // Pre-compute all % values for color scale (data rows only)
+    const allPctsProc = [];
+    procValues.forEach(proc => {
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + curMatrix[proc][b], 0);
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+        if (rowPct > 0) allPctsProc.push(rowPct);
+        BRAND_LIST.forEach(brand => {
+            const qty = curMatrix[proc][brand];
+            const brandTotal = curBrandTotals[brand];
+            const pct = brandTotal > 0 ? (qty / brandTotal) * 100 : 0;
+            if (pct > 0) allPctsProc.push(pct);
+        });
+    });
+    const maxPctsProc = allPctsProc.length > 0 ? Math.max(...allPctsProc) : 1;
+
+    function pctBgStyleProc(pct) {
+        if (pct <= 0) return '';
+        const intensity = (pct / maxPctsProc) * 0.4;
+        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
+    }
+
+    // Pre-compute brand groups for rowspan merging
+    const procBrands = procValues.map(p => getProcBrandGroup(p));
+    
+    procValues.forEach((proc, rowIdx) => {
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + curMatrix[proc][b], 0);
+
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+
+        const currentBrand = procBrands[rowIdx];
+        
+        // Check if this is the first row of this brand group (for rowspan)
+        let brandCell = '';
+        const isFirstOfBrand = (rowIdx === 0 || procBrands[rowIdx - 1] !== currentBrand);
+        if (isFirstOfBrand) {
+            const brandRowspan = procBrands.filter(b => b === currentBrand).length;
+            brandCell = `<td class="ms-brand-merged" rowspan="${brandRowspan}"><strong>${escapeHtml(currentBrand)}</strong></td>`;
+        }
+
+        bodyHtml += `<tr>`;
+        bodyHtml += brandCell;
+        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(proc)}</strong></td>`;
+
+        BRAND_LIST.forEach(brand => {
+            const qty = curMatrix[proc][brand];
+            const brandTotal = curBrandTotals[brand];
+            const pct = brandTotal > 0 ? (qty / brandTotal) * 100 : 0;
+
+            bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
+            bodyHtml += `<td class="ms-pct-white"${pctBgStyleProc(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
+        });
+
+        // Total column
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(rowTotal)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"${pctBgStyleProc(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
+        bodyHtml += `</tr>`;
+    });
+
+    // Total row (above YoY)
+    bodyHtml += `<tr class="ms-grand-row">`;
+    bodyHtml += `<td colspan="2"><strong>Total</strong></td>`;
+    BRAND_LIST.forEach(brand => {
+        const qty = curBrandTotals[brand];
+        const pct = curGrandTotal > 0 ? (qty / curGrandTotal) * 100 : 0;
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"><strong>${pct.toFixed(1)}%</strong></td>`;
+    });
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(curGrandTotal)}</strong></td>`;
+    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    bodyHtml += `</tr>`;
+
+    body.innerHTML = bodyHtml;
+
+    // FOOTER (empty - total moved to body above YoY)
+    const foot = document.getElementById(elementIds.foot);
+    foot.innerHTML = '';
+}
 
 function sanitizeClass(str) {
     return String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1755,6 +2341,14 @@ function setupDownloadButtons() {
         if (controls) controls.insertBefore(btn, controls.firstChild);
         else if (header) header.appendChild(btn);
     }
+
+    // Analisa Bulanan — one button per table block (captures title + table [+ donut])
+    document.querySelectorAll('.monthly-table-block').forEach(block => {
+        const titleEl = block.querySelector('.monthly-table-title') || block;
+        const btn = createDownloadButton(() => block);
+        btn.classList.add('btn-download-corner');
+        titleEl.appendChild(btn);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1838,12 +2432,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Monthly category tabs (Semua / Gaming / Non Gaming) — kept for any remaining uses
-    // (no-op now that monthly analysis is removed, querySelectorAll returns empty list)
+    // Monthly category tabs (Semua / Gaming / Non Gaming)
     document.querySelectorAll('.monthly-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.monthly-cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            currentMonthlyCategory = btn.dataset.monthlyCat;
+            renderMonthlyAnalysis();
         });
     });
 
@@ -1861,9 +2456,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterTopProdProc = document.getElementById('filterTopProdProc');
     if (filterTopProdProc) {
         filterTopProdProc.addEventListener('change', () => {
+            currentTopProdProc = filterTopProdProc.value;
             renderTopProductsChart();
         });
     }
+
+    // Monthly Analysis independent filters
+    document.getElementById('filterBulanMonthly').addEventListener('change', renderMonthlyAnalysis);
+    document.getElementById('filterTahunMonthly').addEventListener('change', renderMonthlyAnalysis);
 
     // Main Navigation Tabs (Analisa Tahunan / Analisa Bulanan)
     document.querySelectorAll('.main-tab').forEach(btn => {
@@ -1874,6 +2474,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.tab-content').forEach(panel => {
                 panel.classList.toggle('active', panel.id === targetId);
             });
+            // Toggle filter bars: global on Tahunan, monthly on Bulanan
+            const globalFilters = document.querySelector('.filters-section:not(.monthly-filters-section)');
+            const monthlyFilters = document.getElementById('monthlyFiltersBar');
+            if (targetId === 'tabBulanan') {
+                globalFilters.classList.add('hidden');
+                monthlyFilters.classList.remove('hidden');
+            } else {
+                globalFilters.classList.remove('hidden');
+                monthlyFilters.classList.add('hidden');
+            }
+            // Trigger monthly analysis render when switching to Bulanan tab
+            if (targetId === 'tabBulanan') {
+                renderMonthlyAnalysis();
+            }
         });
     });
 
