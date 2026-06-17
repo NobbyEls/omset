@@ -15,6 +15,10 @@ const CACHE_VERSION_KEY = 'omset_cache_version_v3';
 
 let allData = [];
 let filteredData = [];
+// Same as filteredData but WITHOUT the year filter applied. Used only by the
+// "Trend Penjualan Bulanan — Year over Year" chart so it can always compare
+// across all available years regardless of the selected year.
+let filteredDataAllYears = [];
 let currentPage = 1;
 const rowsPerPage = 25;
 let charts = {};
@@ -302,11 +306,33 @@ function cacheStatusLabel(status) {
 // =========================================================
 
 function populateFilters() {
-    populateSelect('filterTahun', getUniqueSorted('tahun').map(String));
+    populateYearFilter();
     populateSelect('filterBulan', getUniqueSorted('bulanName', MONTH_NAMES));
     populateSelect('filterKota', getUniqueSorted('cekKota'));
     populateSelect('filterBrand', getUniqueSorted('brand'));
     populateSelect('filterDivisi', getUniqueSorted('divisi'));
+}
+
+// Returns the most recent year present in the data (as a string), or '' if none.
+function getLatestYear() {
+    const years = getUniqueSorted('tahun').map(Number).filter(n => !Number.isNaN(n));
+    return years.length ? String(Math.max(...years)) : '';
+}
+
+// The year filter has NO "Semua Tahun" option — only individual years,
+// listed newest-first, defaulting to the latest year.
+function populateYearFilter() {
+    const select = document.getElementById('filterTahun');
+    if (!select) return;
+    const years = getUniqueSorted('tahun').map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => b - a);
+    select.innerHTML = '';
+    years.forEach(y => {
+        const o = document.createElement('option');
+        o.value = String(y);
+        o.textContent = String(y);
+        select.appendChild(o);
+    });
+    if (years.length) select.value = String(years[0]); // default = latest year
 }
 
 function getUniqueSorted(field, customOrder) {
@@ -362,6 +388,22 @@ function applyFilters() {
         return true;
     });
 
+    // Same filters EXCEPT the year — feeds the YoY trend chart so it always
+    // compares across every available year.
+    filteredDataAllYears = allData.filter(d => {
+        if (fBulan !== 'all' && d.bulanName !== fBulan) return false;
+        if (fKota !== 'all' && d.cekKota !== fKota) return false;
+        if (fBrand !== 'all' && d.brand !== fBrand) return false;
+        if (fKategori !== 'all' && d.cekGaming !== fKategori) return false;
+        if (fDivisi !== 'all' && d.divisi !== fDivisi) return false;
+        if (fProc !== 'all' && d.proc !== fProc) return false;
+        if (search) {
+            const hay = `${d.namaBarang} ${d.kodeSales} ${d.noDoc} ${d.brand}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+        }
+        return true;
+    });
+
     currentPage = 1;
     updateKPIs();
     renderCharts();
@@ -371,7 +413,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-    document.getElementById('filterTahun').value = 'all';
+    document.getElementById('filterTahun').value = getLatestYear();
     document.getElementById('filterBulan').value = 'all';
     document.getElementById('filterKota').value = 'all';
     document.getElementById('filterBrand').value = 'all';
@@ -644,9 +686,11 @@ function renderTrendChart() {
 
     const isValue = currentTrendMetric === 'value';
 
-    // Group by year+month for trend - separate dataset per year
+    // Group by year+month for trend - separate dataset per year.
+    // Uses filteredDataAllYears so the year filter does NOT limit this chart;
+    // all other active filters still apply.
     const yearMonths = {};
-    filteredData.forEach(d => {
+    filteredDataAllYears.forEach(d => {
         if (!yearMonths[d.tahun]) yearMonths[d.tahun] = {};
         if (!yearMonths[d.tahun][d.bulanName]) yearMonths[d.tahun][d.bulanName] = { qty: 0, revenue: 0 };
         yearMonths[d.tahun][d.bulanName].qty += d.qty;
