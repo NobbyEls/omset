@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add 'Average Price Laptop [year]' table in Analisa Tahunan tab, placed ABOVE the 'Marketshare per Brand Proc - Detail Bulanan' section. Shows average price (total/qty) per brand per month with Gaming/Non Gaming filter toggle. Columns: Bulan, ACER, ADVAN, APPLE, ASUS, AXIOO, HP, LENOVO, MSI, OTHER, All Brand. Formatted with dot separators. Yearly average row at bottom. Each brand column has distinct background color.",
+  "status": "in_progress",
+  "steps": [
+    "In index.html, add a new <section> for the Average Price table ABOVE the 'Marketshare per Brand Proc - Detail Bulanan' section (the second .marketshare-section in tabTahunan). It needs: a table-header with title 'Average Price Laptop [year]', a Gaming/Non Gaming/Semua category toggle (similar to existing ms-header-controls pattern), and a table with thead/tbody/tfoot elements with IDs (avgPriceTableHead, avgPriceTableBody, avgPriceTableFoot, avgPriceYearInfo).",
+    "In app.js, create function renderAvgPriceTable() that: (a) Uses filteredData (respects global year/kota/divisi/proc filters), (b) Has its own category state variable (currentAvgPriceCategory), (c) Groups data by bulanName and brand, (d) Calculates average price as sum(total)/sum(qty) for each brand per month, (e) Shows 12 month rows (Jan-Des), each cell showing the average price formatted with dot separator (e.g. 7.485.244) or 0 if no data, (f) Shows 'All Brand' column as overall average per month, (g) Bottom row shows yearly average per brand. Brand columns ordered: ACER, ADVAN, APPLE, ASUS, AXIOO, HP, LENOVO, MSI, OTHER (alphabetical per image). Each brand column header should have a distinct background tint color (ACER=light green, ADVAN=yellow, APPLE=orange, ASUS=light blue, AXIOO=pink, HP=light purple, LENOVO=green, MSI=light yellow, OTHER=light gray as shown in image).",
+    "Wire renderAvgPriceTable() to be called from applyFilters() via safeRender, and add event listeners for the category tabs in the DOMContentLoaded handler. Also hook up the avgPriceCategory toggle buttons.",
+    "Add appropriate CSS in style.css for the avg-price table. Use distinct header background colors per brand column as described. Keep the table compact and readable following the existing monthly-kota-table patterns."
+  ],
+  "acceptance_criteria": [
+    "A table titled 'Average Price Laptop [year]' appears in the Analisa Tahunan tab above the 'Marketshare per Brand Proc - Detail Bulanan' section",
+    "The table shows 12 months as rows with average price per brand per month",
+    "Numbers are formatted with dot separator (Indonesian locale)",
+    "Gaming/Non Gaming/Semua category toggle works correctly to filter the price data",
+    "Each brand column has a distinct background color in the header",
+    "A yearly average row appears at the bottom",
+    "An 'All Brand' column shows the overall average price per month",
+    "No JavaScript console errors on page load"
+  ],
+  "verification": [
+    "Open index.html in browser and confirm the Average Price table appears above Marketshare per Brand Proc section",
+    "Toggle between Gaming/Non Gaming/Semua and verify the table values change",
+    "Verify no JavaScript console errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

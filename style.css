@@ -2081,3 +2081,50 @@ td.nama-barang {
 [data-theme="light"] .ms-brand-intel { color: #3730a3 !important; }
 [data-theme="light"] .ms-brand-amd { color: #9f1239 !important; }
 [data-theme="light"] .ms-brand-snapdragon { color: #92400e !important; }
+
+/* =========================================
+   AVERAGE PRICE TABLE (Per Brand · Per Bulan)
+   ========================================= */
+/* Category buttons styled like .proc-cat-btn */
+.avg-price-cat-btn {
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 7px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.avg-price-cat-btn:hover { color: var(--text-primary); }
+.avg-price-cat-btn.active {
+    background: var(--grad-primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Average price brand column header colors */
+.avg-brand-acer { background: rgba(74, 222, 128, 0.2) !important; color: #4ade80 !important; }
+.avg-brand-advan { background: rgba(250, 204, 21, 0.2) !important; color: #facc15 !important; }
+.avg-brand-apple { background: rgba(251, 146, 60, 0.2) !important; color: #fb923c !important; }
+.avg-brand-asus { background: rgba(96, 165, 250, 0.2) !important; color: #60a5fa !important; }
+.avg-brand-axioo { background: rgba(244, 114, 182, 0.2) !important; color: #f472b6 !important; }
+.avg-brand-hp { background: rgba(167, 139, 250, 0.2) !important; color: #a78bfa !important; }
+.avg-brand-lenovo { background: rgba(34, 197, 94, 0.2) !important; color: #22c55e !important; }
+.avg-brand-msi { background: rgba(253, 224, 71, 0.2) !important; color: #fde047 !important; }
+.avg-brand-other { background: rgba(156, 163, 175, 0.2) !important; color: #9ca3af !important; }
+.avg-brand-all { background: rgba(99, 102, 241, 0.15) !important; color: #a5b4fc !important; }
+
+/* Light-theme overrides for average price brand columns */
+[data-theme="light"] .avg-brand-acer { color: #166534 !important; }
+[data-theme="light"] .avg-brand-advan { color: #854d0e !important; }
+[data-theme="light"] .avg-brand-apple { color: #9a3412 !important; }
+[data-theme="light"] .avg-brand-asus { color: #1e40af !important; }
+[data-theme="light"] .avg-brand-axioo { color: #9d174d !important; }
+[data-theme="light"] .avg-brand-hp { color: #5b21b6 !important; }
+[data-theme="light"] .avg-brand-lenovo { color: #15803d !important; }
+[data-theme="light"] .avg-brand-msi { color: #713f12 !important; }
+[data-theme="light"] .avg-brand-other { color: #4b5563 !important; }
+[data-theme="light"] .avg-brand-all { color: #3730a3 !important; }

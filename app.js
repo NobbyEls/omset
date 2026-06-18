@@ -414,6 +414,7 @@ function applyFilters() {
     safeRender(updateKPIs, 'updateKPIs');
     safeRender(renderCharts, 'renderCharts');
     safeRender(renderMarketshareTable, 'renderMarketshareTable');
+    safeRender(renderAvgPriceTable, 'renderAvgPriceTable');
     safeRender(renderMonthlyAnalysis, 'renderMonthlyAnalysis');
     safeRender(populateTopProdProcFilter, 'populateTopProdProcFilter');
 }
@@ -1286,9 +1287,117 @@ function escapeHtml(str) {
 let currentMSCategory = 'all';
 let currentMSMetric = 'qty'; // 'qty' | 'value' (total omset) for the marketshare table
 let currentProcStackedCategory = 'all';
+let currentAvgPriceCategory = 'all';
 
 // Hanya 8 brand yang ditampilkan, sisanya OTHER
 const ALLOWED_BRANDS = ['ASUS', 'LENOVO', 'ACER', 'APPLE', 'AXIOO', 'ADVAN', 'HP', 'MSI'];
+
+// =========================================================
+// AVERAGE PRICE TABLE (Per Brand · Per Bulan)
+// =========================================================
+
+const AVG_PRICE_BRANDS = ['ACER', 'ADVAN', 'APPLE', 'ASUS', 'AXIOO', 'HP', 'LENOVO', 'MSI', 'OTHER'];
+const AVG_PRICE_BRAND_COLORS = {
+    'ACER': 'avg-brand-acer',
+    'ADVAN': 'avg-brand-advan',
+    'APPLE': 'avg-brand-apple',
+    'ASUS': 'avg-brand-asus',
+    'AXIOO': 'avg-brand-axioo',
+    'HP': 'avg-brand-hp',
+    'LENOVO': 'avg-brand-lenovo',
+    'MSI': 'avg-brand-msi',
+    'OTHER': 'avg-brand-other'
+};
+
+function renderAvgPriceTable() {
+    const fTahun = document.getElementById('filterTahun').value;
+    const targetYear = fTahun !== 'all' ? parseInt(fTahun) : 2026;
+    const category = currentAvgPriceCategory;
+
+    // Update title year
+    const yearTitleEl = document.getElementById('avgPriceYearTitle');
+    if (yearTitleEl) yearTitleEl.textContent = targetYear;
+
+    // Year info
+    const yearInfoEl = document.getElementById('avgPriceYearInfo');
+    if (yearInfoEl) {
+        yearInfoEl.innerHTML = `<strong>Tahun ${targetYear}</strong> · Kategori: <strong>${category === 'all' ? 'Semua' : category}</strong>`;
+    }
+
+    // Filter data: use filteredData (respects global year/kota/divisi/proc filters)
+    let data = filteredData;
+    if (category !== 'all') {
+        data = data.filter(d => d.cekGaming === category);
+    }
+
+    // Build month x brand aggregation
+    // For each month and brand, sum total and qty
+    const monthData = {}; // { monthIdx: { brand: { total, qty } } }
+    for (let i = 0; i < 12; i++) {
+        monthData[i] = {};
+        AVG_PRICE_BRANDS.forEach(b => { monthData[i][b] = { total: 0, qty: 0 }; });
+        monthData[i]['ALL'] = { total: 0, qty: 0 };
+    }
+
+    data.forEach(d => {
+        const mIdx = MONTH_NAMES.indexOf(d.bulanName);
+        if (mIdx < 0) return;
+        const brand = getBrandGroup(d.brand);
+        const brandKey = AVG_PRICE_BRANDS.includes(brand) ? brand : 'OTHER';
+
+        monthData[mIdx][brandKey].total += (d.total || 0);
+        monthData[mIdx][brandKey].qty += (d.qty || 0);
+        monthData[mIdx]['ALL'].total += (d.total || 0);
+        monthData[mIdx]['ALL'].qty += (d.qty || 0);
+    });
+
+    // Build thead
+    let theadHtml = '<tr><th class="ms-bulan-cell">Bulan</th>';
+    AVG_PRICE_BRANDS.forEach(b => {
+        theadHtml += `<th class="ms-qty ${AVG_PRICE_BRAND_COLORS[b]}">${escapeHtml(b)}</th>`;
+    });
+    theadHtml += '<th class="ms-qty avg-brand-all">All Brand</th></tr>';
+
+    // Build tbody
+    let tbodyHtml = '';
+    // Yearly totals for footer
+    const yearlyTotals = {};
+    AVG_PRICE_BRANDS.forEach(b => { yearlyTotals[b] = { total: 0, qty: 0 }; });
+    yearlyTotals['ALL'] = { total: 0, qty: 0 };
+
+    for (let i = 0; i < 12; i++) {
+        tbodyHtml += `<tr><td class="ms-bulan-cell">${MONTH_NAMES[i]}</td>`;
+        AVG_PRICE_BRANDS.forEach(b => {
+            const cell = monthData[i][b];
+            const avg = cell.qty > 0 ? Math.round(cell.total / cell.qty) : 0;
+            tbodyHtml += `<td class="ms-qty">${formatNumber(avg)}</td>`;
+            yearlyTotals[b].total += cell.total;
+            yearlyTotals[b].qty += cell.qty;
+        });
+        const allCell = monthData[i]['ALL'];
+        const allAvg = allCell.qty > 0 ? Math.round(allCell.total / allCell.qty) : 0;
+        tbodyHtml += `<td class="ms-qty">${formatNumber(allAvg)}</td>`;
+        yearlyTotals['ALL'].total += allCell.total;
+        yearlyTotals['ALL'].qty += allCell.qty;
+        tbodyHtml += '</tr>';
+    }
+
+    // Build tfoot (yearly average)
+    let tfootHtml = '<tr class="ms-grand-row"><td class="ms-bulan-cell"><strong>Rata-rata</strong></td>';
+    AVG_PRICE_BRANDS.forEach(b => {
+        const yt = yearlyTotals[b];
+        const avg = yt.qty > 0 ? Math.round(yt.total / yt.qty) : 0;
+        tfootHtml += `<td class="ms-qty"><strong>${formatNumber(avg)}</strong></td>`;
+    });
+    const ytAll = yearlyTotals['ALL'];
+    const avgAll = ytAll.qty > 0 ? Math.round(ytAll.total / ytAll.qty) : 0;
+    tfootHtml += `<td class="ms-qty"><strong>${formatNumber(avgAll)}</strong></td>`;
+    tfootHtml += '</tr>';
+
+    document.getElementById('avgPriceTableHead').innerHTML = theadHtml;
+    document.getElementById('avgPriceTableBody').innerHTML = tbodyHtml;
+    document.getElementById('avgPriceTableFoot').innerHTML = tfootHtml;
+}
 
 function renderMarketshareTable() {
     renderMarketshareTableGeneric({
@@ -2409,6 +2518,16 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             currentMSMetric = btn.dataset.msMetric;
             renderMarketshareTable();
+        });
+    });
+
+    // Average Price category tabs (Semua / Gaming / Non Gaming)
+    document.querySelectorAll('.avg-price-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.avg-price-cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentAvgPriceCategory = btn.dataset.avgpriceCat;
+            renderAvgPriceTable();
         });
     });
 
