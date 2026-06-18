@@ -1288,6 +1288,27 @@ td.nama-barang {
     font-family: 'Space Grotesk', sans-serif !important;
 }
 
+/* MoM / YoY footer rows */
+.ms-table tfoot tr.ms-mom-row td,
+.ms-table tfoot tr.ms-yoy-footer-row td {
+    padding: 7px 8px;
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid var(--border-subtle);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.ms-table tfoot tr.ms-mom-row td:first-child,
+.ms-table tfoot tr.ms-yoy-footer-row td:first-child {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
 
 /* ================= % Marketshare Cell Indicators ================= */
 .ms-pct .pct-up {

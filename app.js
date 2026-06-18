@@ -1726,6 +1726,7 @@ function renderMonthlyAnalysis() {
     };
     safe(() => renderMonthlyCategoryTable(bulan, tahun), 'CategoryTable');
     safe(() => renderMonthlyBrandKotaTable(bulan, tahun), 'BrandKotaTable');
+    safe(() => renderMonthlyBrandKotaValueTable(bulan, tahun), 'BrandKotaValueTable');
     safe(() => renderMonthlyBrandTable({
         groupField: 'seriProc2',
         label: 'Seri Proc 2',
@@ -1871,6 +1872,10 @@ function renderMonthlyCategoryTable(bulan, tahun) {
 
 function renderMonthlyBrandKotaTable(bulan, tahun) {
     const prevYear = tahun - 1;
+    const monthIdx = MONTH_NAMES.indexOf(bulan);
+    const prevMonthIdx = monthIdx - 1;
+    const prevMonthName = prevMonthIdx >= 0 ? MONTH_NAMES[prevMonthIdx] : 'Des';
+    const prevMonthYear = prevMonthIdx >= 0 ? tahun : tahun - 1;
 
     // Info bar
     const infoEl = document.getElementById('monthlyInfoBrand');
@@ -1878,6 +1883,8 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
 
     // Current month data
     const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Previous month data (for MoM)
+    const prevMonthData = allData.filter(d => d.tahun === prevMonthYear && d.bulanName === prevMonthName && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
     // Same month previous year (for YoY)
     const yoyData = allData.filter(d => d.tahun === prevYear && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
 
@@ -1899,17 +1906,21 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
 
     const curMatrix = buildBrandMatrix(curData);
     const yoyMatrix = buildBrandMatrix(yoyData);
+    const prevMonthMatrix = buildBrandMatrix(prevMonthData);
 
     // Grand totals per kota
     const curKotaTotals = {};
     const yoyKotaTotals = {};
+    const prevMonthKotaTotals = {};
     KOTA_LIST.forEach(k => {
         curKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + curMatrix[b][k], 0);
         yoyKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + yoyMatrix[b][k], 0);
+        prevMonthKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + prevMonthMatrix[b][k], 0);
     });
 
     const curGrandTotal = KOTA_LIST.reduce((s, k) => s + curKotaTotals[k], 0);
     const yoyGrandTotal = KOTA_LIST.reduce((s, k) => s + yoyKotaTotals[k], 0);
+    const prevMonthGrandTotal = KOTA_LIST.reduce((s, k) => s + prevMonthKotaTotals[k], 0);
 
     // HEAD
     const head = document.getElementById('monthlyTableHeadBrand');
@@ -1986,9 +1997,199 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
 
     body.innerHTML = bodyHtml;
 
-    // FOOTER (empty now - total moved to body)
+    // FOOTER - MoM and YoY rows
     const foot = document.getElementById('monthlyTableFootBrand');
-    foot.innerHTML = '';
+    let footHtml = '';
+
+    // Helper for percentage change cell
+    function pctChangeCell(cur, prev) {
+        if (!prev || prev === 0) return `<td colspan="2" class="ms-mom-cell" style="text-align:center;">-</td>`;
+        const change = ((cur - prev) / prev) * 100;
+        const color = change >= 0 ? '#3b82f6' : '#ef4444';
+        const sign = change >= 0 ? '+' : '';
+        return `<td colspan="2" class="ms-mom-cell" style="text-align:center;color:${color};font-weight:600;">${sign}${change.toFixed(1)}%</td>`;
+    }
+
+    // MoM row
+    footHtml += `<tr class="ms-mom-row">`;
+    footHtml += `<td class="ms-bulan-cell"><strong>MoM</strong></td>`;
+    KOTA_LIST.forEach(k => {
+        footHtml += pctChangeCell(curKotaTotals[k], prevMonthKotaTotals[k]);
+    });
+    footHtml += pctChangeCell(curGrandTotal, prevMonthGrandTotal);
+    footHtml += `</tr>`;
+
+    // YoY row
+    footHtml += `<tr class="ms-yoy-footer-row">`;
+    footHtml += `<td class="ms-bulan-cell"><strong>YoY</strong></td>`;
+    KOTA_LIST.forEach(k => {
+        footHtml += pctChangeCell(curKotaTotals[k], yoyKotaTotals[k]);
+    });
+    footHtml += pctChangeCell(curGrandTotal, yoyGrandTotal);
+    footHtml += `</tr>`;
+
+    foot.innerHTML = footHtml;
+}
+
+function renderMonthlyBrandKotaValueTable(bulan, tahun) {
+    const prevYear = tahun - 1;
+    const monthIdx = MONTH_NAMES.indexOf(bulan);
+    const prevMonthIdx = monthIdx - 1;
+    const prevMonthName = prevMonthIdx >= 0 ? MONTH_NAMES[prevMonthIdx] : 'Des';
+    const prevMonthYear = prevMonthIdx >= 0 ? tahun : tahun - 1;
+
+    // Info bar
+    const infoEl = document.getElementById('monthlyInfoBrandValue');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong>`;
+
+    // Current month data
+    const curData = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Previous month data (for MoM)
+    const prevMonthData = allData.filter(d => d.tahun === prevMonthYear && d.bulanName === prevMonthName && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+    // Same month previous year (for YoY)
+    const yoyData = allData.filter(d => d.tahun === prevYear && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+
+    // Build value (revenue) matrices: brand x kota
+    function buildValueMatrix(data) {
+        const mx = {};
+        BRAND_LIST.forEach(b => {
+            mx[b] = {};
+            KOTA_LIST.forEach(k => mx[b][k] = 0);
+        });
+        data.forEach(d => {
+            const b = getBrandGroup(d.brand);
+            if (mx[b] && KOTA_LIST.includes(d.cekKota)) {
+                mx[b][d.cekKota] += d.total;
+            }
+        });
+        return mx;
+    }
+
+    const curMatrix = buildValueMatrix(curData);
+    const yoyMatrix = buildValueMatrix(yoyData);
+    const prevMonthMatrix = buildValueMatrix(prevMonthData);
+
+    // Grand totals per kota
+    const curKotaTotals = {};
+    const yoyKotaTotals = {};
+    const prevMonthKotaTotals = {};
+    KOTA_LIST.forEach(k => {
+        curKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + curMatrix[b][k], 0);
+        yoyKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + yoyMatrix[b][k], 0);
+        prevMonthKotaTotals[k] = BRAND_LIST.reduce((s, b) => s + prevMonthMatrix[b][k], 0);
+    });
+
+    const curGrandTotal = KOTA_LIST.reduce((s, k) => s + curKotaTotals[k], 0);
+    const yoyGrandTotal = KOTA_LIST.reduce((s, k) => s + yoyKotaTotals[k], 0);
+    const prevMonthGrandTotal = KOTA_LIST.reduce((s, k) => s + prevMonthKotaTotals[k], 0);
+
+    // HEAD
+    const head = document.getElementById('monthlyTableHeadBrandValue');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Brand</th>
+            ${KOTA_LIST.map(k => `<th colspan="2" class="ms-kota-header">${k}</th>`).join('')}
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            ${KOTA_LIST.map(() => `<th>Value</th><th>%</th>`).join('')}
+            <th>Value</th><th>%</th>
+        </tr>
+    `;
+
+    // BODY
+    const body = document.getElementById('monthlyTableBodyBrandValue');
+    let bodyHtml = '';
+
+    // Pre-compute all % values for color scale (data rows only)
+    const allPctsValue = [];
+    BRAND_LIST.forEach(brand => {
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+        if (rowPct > 0) allPctsValue.push(rowPct);
+        KOTA_LIST.forEach(kota => {
+            const val = curMatrix[brand][kota];
+            const kotaTotal = curKotaTotals[kota];
+            const pct = kotaTotal > 0 ? (val / kotaTotal) * 100 : 0;
+            if (pct > 0) allPctsValue.push(pct);
+        });
+    });
+    const maxPctValue = allPctsValue.length > 0 ? Math.max(...allPctsValue) : 1;
+
+    function pctBgStyle(pct) {
+        if (pct <= 0) return '';
+        const intensity = (pct / maxPctValue) * 0.4;
+        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
+    }
+
+    BRAND_LIST.forEach(brand => {
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + curMatrix[brand][k], 0);
+        const rowPct = curGrandTotal > 0 ? (rowTotal / curGrandTotal) * 100 : 0;
+
+        bodyHtml += `<tr>`;
+        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(brand)}</strong></td>`;
+
+        KOTA_LIST.forEach(kota => {
+            const val = curMatrix[brand][kota];
+            const kotaTotal = curKotaTotals[kota];
+            const pct = kotaTotal > 0 ? (val / kotaTotal) * 100 : 0;
+            bodyHtml += `<td class="ms-qty">${val > 0 ? formatCurrencyShort(val) : '-'}</td>`;
+            bodyHtml += `<td class="ms-pct-white"${pctBgStyle(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
+        });
+
+        // Total column
+        bodyHtml += `<td class="ms-qty"><strong>${rowTotal > 0 ? formatCurrencyShort(rowTotal) : '-'}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"${pctBgStyle(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
+        bodyHtml += `</tr>`;
+    });
+
+    // Grand Total row
+    bodyHtml += `<tr class="ms-grand-row">`;
+    bodyHtml += `<td><strong>Total</strong></td>`;
+    KOTA_LIST.forEach(kota => {
+        const val = curKotaTotals[kota];
+        const pct = curGrandTotal > 0 ? (val / curGrandTotal) * 100 : 0;
+        bodyHtml += `<td class="ms-qty"><strong>${formatCurrencyShort(val)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"><strong>${pct.toFixed(1)}%</strong></td>`;
+    });
+    bodyHtml += `<td class="ms-qty"><strong>${formatCurrencyShort(curGrandTotal)}</strong></td>`;
+    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    bodyHtml += `</tr>`;
+
+    body.innerHTML = bodyHtml;
+
+    // FOOTER - MoM and YoY rows
+    const foot = document.getElementById('monthlyTableFootBrandValue');
+    let footHtml = '';
+
+    // Helper for percentage change cell
+    function pctChangeCell(cur, prev) {
+        if (!prev || prev === 0) return `<td colspan="2" class="ms-mom-cell" style="text-align:center;">-</td>`;
+        const change = ((cur - prev) / prev) * 100;
+        const color = change >= 0 ? '#3b82f6' : '#ef4444';
+        const sign = change >= 0 ? '+' : '';
+        return `<td colspan="2" class="ms-mom-cell" style="text-align:center;color:${color};font-weight:600;">${sign}${change.toFixed(1)}%</td>`;
+    }
+
+    // MoM row
+    footHtml += `<tr class="ms-mom-row">`;
+    footHtml += `<td class="ms-bulan-cell"><strong>MoM</strong></td>`;
+    KOTA_LIST.forEach(k => {
+        footHtml += pctChangeCell(curKotaTotals[k], prevMonthKotaTotals[k]);
+    });
+    footHtml += pctChangeCell(curGrandTotal, prevMonthGrandTotal);
+    footHtml += `</tr>`;
+
+    // YoY row
+    footHtml += `<tr class="ms-yoy-footer-row">`;
+    footHtml += `<td class="ms-bulan-cell"><strong>YoY</strong></td>`;
+    KOTA_LIST.forEach(k => {
+        footHtml += pctChangeCell(curKotaTotals[k], yoyKotaTotals[k]);
+    });
+    footHtml += pctChangeCell(curGrandTotal, yoyGrandTotal);
+    footHtml += `</tr>`;
+
+    foot.innerHTML = footHtml;
 }
 
 function renderMonthlyBrandTable(config) {
