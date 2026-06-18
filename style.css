@@ -1490,6 +1490,17 @@ td.nama-barang {
     table-layout: fixed;
 }
 
+/* Give the first column (Range Harga / Brand / Proc) enough space so text doesn't overlap */
+#monthlyTableHargaBrand .ms-bulan,
+#monthlyTableHargaKota .ms-bulan,
+#monthlyTableHargaBrand .ms-bulan-cell,
+#monthlyTableHargaKota .ms-bulan-cell {
+    width: 140px;
+    min-width: 140px;
+    white-space: nowrap;
+    overflow: visible;
+}
+
 .monthly-kota-table .ms-kota-header {
     text-align: center;
     font-weight: 700;
