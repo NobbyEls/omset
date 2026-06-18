@@ -1311,7 +1311,7 @@ const AVG_PRICE_BRAND_COLORS = {
 
 function renderAvgPriceTable() {
     const fTahun = document.getElementById('filterTahun').value;
-    const targetYear = fTahun !== 'all' ? parseInt(fTahun) : 2026;
+    const targetYear = fTahun !== 'all' ? parseInt(fTahun) : Math.max(...allData.map(d => d.tahun));
     const category = currentAvgPriceCategory;
 
     // Update title year
@@ -1422,7 +1422,7 @@ function renderMarketshareTableGeneric(config) {
     const fmtV = (n) => isValue ? formatCurrencyShort(n) : formatNumber(n);
     
     const fTahun = document.getElementById('filterTahun').value;
-    const targetYear = fTahun !== 'all' ? parseInt(fTahun) : 2026;
+    const targetYear = fTahun !== 'all' ? parseInt(fTahun) : Math.max(...allData.map(d => d.tahun));
     const prevYear = targetYear - 1;
     
     document.getElementById(elementIds.yearInfo).innerHTML = 
@@ -1872,6 +1872,15 @@ function renderMonthlyCategoryTable(bulan, tahun) {
     }
 }
 
+// Shared helper for percentage change cell (MoM/YoY)
+function pctChangeCell(cur, prev) {
+    if (!prev || prev === 0) return `<td colspan="2" class="ms-mom-cell" style="text-align:center;">-</td>`;
+    const change = ((cur - prev) / prev) * 100;
+    const color = change >= 0 ? '#3b82f6' : '#ef4444';
+    const sign = change >= 0 ? '+' : '';
+    return `<td colspan="2" class="ms-mom-cell" style="text-align:center;color:${color};font-weight:600;">${sign}${change.toFixed(1)}%</td>`;
+}
+
 function renderMonthlyBrandKotaTable(bulan, tahun) {
     const prevYear = tahun - 1;
     const monthIdx = MONTH_NAMES.indexOf(bulan);
@@ -2002,15 +2011,6 @@ function renderMonthlyBrandKotaTable(bulan, tahun) {
     // FOOTER - MoM and YoY rows
     const foot = document.getElementById('monthlyTableFootBrand');
     let footHtml = '';
-
-    // Helper for percentage change cell
-    function pctChangeCell(cur, prev) {
-        if (!prev || prev === 0) return `<td colspan="2" class="ms-mom-cell" style="text-align:center;">-</td>`;
-        const change = ((cur - prev) / prev) * 100;
-        const color = change >= 0 ? '#3b82f6' : '#ef4444';
-        const sign = change >= 0 ? '+' : '';
-        return `<td colspan="2" class="ms-mom-cell" style="text-align:center;color:${color};font-weight:600;">${sign}${change.toFixed(1)}%</td>`;
-    }
 
     // MoM row
     footHtml += `<tr class="ms-mom-row">`;
@@ -2163,15 +2163,6 @@ function renderMonthlyBrandKotaValueTable(bulan, tahun) {
     // FOOTER - MoM and YoY rows
     const foot = document.getElementById('monthlyTableFootBrandValue');
     let footHtml = '';
-
-    // Helper for percentage change cell
-    function pctChangeCell(cur, prev) {
-        if (!prev || prev === 0) return `<td colspan="2" class="ms-mom-cell" style="text-align:center;">-</td>`;
-        const change = ((cur - prev) / prev) * 100;
-        const color = change >= 0 ? '#3b82f6' : '#ef4444';
-        const sign = change >= 0 ? '+' : '';
-        return `<td colspan="2" class="ms-mom-cell" style="text-align:center;color:${color};font-weight:600;">${sign}${change.toFixed(1)}%</td>`;
-    }
 
     // MoM row
     footHtml += `<tr class="ms-mom-row">`;
@@ -2434,36 +2425,46 @@ function renderMonthlyBrandTable(config) {
 
 function renderMonthlyHargaBrandTable(bulan, tahun) {
     const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+    const LAINNYA = 'Lainnya';
 
     const infoEl = document.getElementById('monthlyInfoHargaBrand');
     infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Brand`;
 
     const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
 
-    // Build matrix: priceRange x brand
+    // Build matrix: priceRange x brand (including Lainnya catch-all)
     const mx = {};
     PRICE_RANGES.forEach(r => {
         mx[r] = {};
         BRAND_LIST.forEach(b => mx[r][b] = 0);
     });
+    mx[LAINNYA] = {};
+    BRAND_LIST.forEach(b => mx[LAINNYA][b] = 0);
+
     data.forEach(d => {
         const b = getBrandGroup(d.brand);
         const r = d.cekHargaNon;
         if (mx[r] && mx[r][b] !== undefined) {
             mx[r][b] += d.qty;
+        } else if (r && mx[LAINNYA][b] !== undefined) {
+            mx[LAINNYA][b] += d.qty;
         }
     });
+
+    // Determine display ranges (include Lainnya only if it has data)
+    const lainnyaTotal = BRAND_LIST.reduce((s, b) => s + mx[LAINNYA][b], 0);
+    const displayRanges = lainnyaTotal > 0 ? [...PRICE_RANGES, LAINNYA] : [...PRICE_RANGES];
 
     // Totals per brand
     const brandTotals = {};
     BRAND_LIST.forEach(b => {
-        brandTotals[b] = PRICE_RANGES.reduce((s, r) => s + mx[r][b], 0);
+        brandTotals[b] = displayRanges.reduce((s, r) => s + mx[r][b], 0);
     });
     const grandTotal = BRAND_LIST.reduce((s, b) => s + brandTotals[b], 0);
 
     // Collect all pct values for color scaling
     const allPcts = [];
-    PRICE_RANGES.forEach(range => {
+    displayRanges.forEach(range => {
         BRAND_LIST.forEach(b => {
             const pct = brandTotals[b] > 0 ? (mx[range][b] / brandTotals[b]) * 100 : 0;
             if (pct > 0) allPcts.push(pct);
@@ -2498,7 +2499,7 @@ function renderMonthlyHargaBrandTable(bulan, tahun) {
     const body = document.getElementById('monthlyTableBodyHargaBrand');
     let bodyHtml = '';
 
-    PRICE_RANGES.forEach(range => {
+    displayRanges.forEach(range => {
         const rowTotal = BRAND_LIST.reduce((s, b) => s + mx[range][b], 0);
         const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
 
@@ -2539,36 +2540,46 @@ function renderMonthlyHargaBrandTable(bulan, tahun) {
 
 function renderMonthlyHargaKotaTable(bulan, tahun) {
     const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+    const LAINNYA = 'Lainnya';
 
     const infoEl = document.getElementById('monthlyInfoHargaKota');
     infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Kota`;
 
     const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
 
-    // Build matrix: priceRange x kota
+    // Build matrix: priceRange x kota (including Lainnya catch-all)
     const mx = {};
     PRICE_RANGES.forEach(r => {
         mx[r] = {};
         KOTA_LIST.forEach(k => mx[r][k] = 0);
     });
+    mx[LAINNYA] = {};
+    KOTA_LIST.forEach(k => mx[LAINNYA][k] = 0);
+
     data.forEach(d => {
         const k = d.cekKota;
         const r = d.cekHargaNon;
         if (mx[r] && KOTA_LIST.includes(k)) {
             mx[r][k] += d.qty;
+        } else if (r && !PRICE_RANGES.includes(r) && KOTA_LIST.includes(k)) {
+            mx[LAINNYA][k] += d.qty;
         }
     });
+
+    // Determine display ranges (include Lainnya only if it has data)
+    const lainnyaTotal = KOTA_LIST.reduce((s, k) => s + mx[LAINNYA][k], 0);
+    const displayRanges = lainnyaTotal > 0 ? [...PRICE_RANGES, LAINNYA] : [...PRICE_RANGES];
 
     // Totals per kota
     const kotaTotals = {};
     KOTA_LIST.forEach(k => {
-        kotaTotals[k] = PRICE_RANGES.reduce((s, r) => s + mx[r][k], 0);
+        kotaTotals[k] = displayRanges.reduce((s, r) => s + mx[r][k], 0);
     });
     const grandTotal = KOTA_LIST.reduce((s, k) => s + kotaTotals[k], 0);
 
     // Collect all pct values for color scaling
     const allPcts = [];
-    PRICE_RANGES.forEach(range => {
+    displayRanges.forEach(range => {
         KOTA_LIST.forEach(k => {
             const pct = kotaTotals[k] > 0 ? (mx[range][k] / kotaTotals[k]) * 100 : 0;
             if (pct > 0) allPcts.push(pct);
@@ -2603,7 +2614,7 @@ function renderMonthlyHargaKotaTable(bulan, tahun) {
     const body = document.getElementById('monthlyTableBodyHargaKota');
     let bodyHtml = '';
 
-    PRICE_RANGES.forEach(range => {
+    displayRanges.forEach(range => {
         const rowTotal = KOTA_LIST.reduce((s, k) => s + mx[range][k], 0);
         const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
 
