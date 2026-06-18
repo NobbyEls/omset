@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Add 'Average Price Laptop [year]' table in Analisa Tahunan tab, placed ABOVE the 'Marketshare per Brand Proc - Detail Bulanan' section. Shows average price (total/qty) per brand per month with Gaming/Non Gaming filter toggle. Columns: Bulan, ACER, ADVAN, APPLE, ASUS, AXIOO, HP, LENOVO, MSI, OTHER, All Brand. Formatted with dot separators. Yearly average row at bottom. Each brand column has distinct background color.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In index.html, add a new <section> for the Average Price table ABOVE the 'Marketshare per Brand Proc - Detail Bulanan' section (the second .marketshare-section in tabTahunan). It needs: a table-header with title 'Average Price Laptop [year]', a Gaming/Non Gaming/Semua category toggle (similar to existing ms-header-controls pattern), and a table with thead/tbody/tfoot elements with IDs (avgPriceTableHead, avgPriceTableBody, avgPriceTableFoot, avgPriceYearInfo).",
     "In app.js, create function renderAvgPriceTable() that: (a) Uses filteredData (respects global year/kota/divisi/proc filters), (b) Has its own category state variable (currentAvgPriceCategory), (c) Groups data by bulanName and brand, (d) Calculates average price as sum(total)/sum(qty) for each brand per month, (e) Shows 12 month rows (Jan-Des), each cell showing the average price formatted with dot separator (e.g. 7.485.244) or 0 if no data, (f) Shows 'All Brand' column as overall average per month, (g) Bottom row shows yearly average per brand. Brand columns ordered: ACER, ADVAN, APPLE, ASUS, AXIOO, HP, LENOVO, MSI, OTHER (alphabetical per image). Each brand column header should have a distinct background tint color (ACER=light green, ADVAN=yellow, APPLE=orange, ASUS=light blue, AXIOO=pink, HP=light purple, LENOVO=green, MSI=light yellow, OTHER=light gray as shown in image).",
@@ -25,5 +25,5 @@
     "Verify no JavaScript console errors"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Implemented successfully. Used filteredData (global year/kota/divisi/proc filters apply) with additional cekGaming filter for category toggle. Brand ordering is alphabetical: ACER, ADVAN, APPLE, ASUS, AXIOO, HP, LENOVO, MSI, OTHER. The getBrandGroup function maps unknown brands to OTHER. Event listeners use data-avgprice-cat attribute to avoid conflicts with other toggle buttons."
 }
