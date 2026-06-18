@@ -1750,6 +1750,8 @@ function renderMonthlyAnalysis() {
             foot: 'monthlyTableFootV'
         }
     }), 'Type Processor (V)');
+    safe(() => renderMonthlyHargaBrandTable(bulan, tahun), 'HargaBrandTable');
+    safe(() => renderMonthlyHargaKotaTable(bulan, tahun), 'HargaKotaTable');
 }
 
 function renderMonthlyCategoryTable(bulan, tahun) {
@@ -2427,6 +2429,216 @@ function renderMonthlyBrandTable(config) {
 
     // FOOTER (empty - total moved to body above YoY)
     const foot = document.getElementById(elementIds.foot);
+    foot.innerHTML = '';
+}
+
+function renderMonthlyHargaBrandTable(bulan, tahun) {
+    const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+
+    const infoEl = document.getElementById('monthlyInfoHargaBrand');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Brand`;
+
+    const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+
+    // Build matrix: priceRange x brand
+    const mx = {};
+    PRICE_RANGES.forEach(r => {
+        mx[r] = {};
+        BRAND_LIST.forEach(b => mx[r][b] = 0);
+    });
+    data.forEach(d => {
+        const b = getBrandGroup(d.brand);
+        const r = d.cekHargaNon;
+        if (mx[r] && mx[r][b] !== undefined) {
+            mx[r][b] += d.qty;
+        }
+    });
+
+    // Totals per brand
+    const brandTotals = {};
+    BRAND_LIST.forEach(b => {
+        brandTotals[b] = PRICE_RANGES.reduce((s, r) => s + mx[r][b], 0);
+    });
+    const grandTotal = BRAND_LIST.reduce((s, b) => s + brandTotals[b], 0);
+
+    // Collect all pct values for color scaling
+    const allPcts = [];
+    PRICE_RANGES.forEach(range => {
+        BRAND_LIST.forEach(b => {
+            const pct = brandTotals[b] > 0 ? (mx[range][b] / brandTotals[b]) * 100 : 0;
+            if (pct > 0) allPcts.push(pct);
+        });
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + mx[range][b], 0);
+        const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
+        if (rowPct > 0) allPcts.push(rowPct);
+    });
+    const maxPct = allPcts.length > 0 ? Math.max(...allPcts) : 1;
+
+    function pctBgStyle(pct) {
+        if (pct <= 0) return '';
+        const intensity = (pct / maxPct) * 0.4;
+        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
+    }
+
+    // HEAD
+    const head = document.getElementById('monthlyTableHeadHargaBrand');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Range Harga</th>
+            ${BRAND_LIST.map(b => `<th colspan="2" class="ms-kota-header">${b}</th>`).join('')}
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            ${BRAND_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    // BODY
+    const body = document.getElementById('monthlyTableBodyHargaBrand');
+    let bodyHtml = '';
+
+    PRICE_RANGES.forEach(range => {
+        const rowTotal = BRAND_LIST.reduce((s, b) => s + mx[range][b], 0);
+        const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
+
+        bodyHtml += `<tr>`;
+        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(range)}</strong></td>`;
+
+        BRAND_LIST.forEach(b => {
+            const qty = mx[range][b];
+            const pct = brandTotals[b] > 0 ? (qty / brandTotals[b]) * 100 : 0;
+            bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
+            bodyHtml += `<td class="ms-pct-white"${pctBgStyle(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
+        });
+
+        // Total column
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(rowTotal)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"${pctBgStyle(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
+        bodyHtml += `</tr>`;
+    });
+
+    // Grand Total row
+    bodyHtml += `<tr class="ms-grand-row">`;
+    bodyHtml += `<td><strong>Total</strong></td>`;
+    BRAND_LIST.forEach(b => {
+        const qty = brandTotals[b];
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    });
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(grandTotal)}</strong></td>`;
+    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    bodyHtml += `</tr>`;
+
+    body.innerHTML = bodyHtml;
+
+    // FOOTER (empty)
+    const foot = document.getElementById('monthlyTableFootHargaBrand');
+    foot.innerHTML = '';
+}
+
+function renderMonthlyHargaKotaTable(bulan, tahun) {
+    const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+
+    const infoEl = document.getElementById('monthlyInfoHargaKota');
+    infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Kota`;
+
+    const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
+
+    // Build matrix: priceRange x kota
+    const mx = {};
+    PRICE_RANGES.forEach(r => {
+        mx[r] = {};
+        KOTA_LIST.forEach(k => mx[r][k] = 0);
+    });
+    data.forEach(d => {
+        const k = d.cekKota;
+        const r = d.cekHargaNon;
+        if (mx[r] && KOTA_LIST.includes(k)) {
+            mx[r][k] += d.qty;
+        }
+    });
+
+    // Totals per kota
+    const kotaTotals = {};
+    KOTA_LIST.forEach(k => {
+        kotaTotals[k] = PRICE_RANGES.reduce((s, r) => s + mx[r][k], 0);
+    });
+    const grandTotal = KOTA_LIST.reduce((s, k) => s + kotaTotals[k], 0);
+
+    // Collect all pct values for color scaling
+    const allPcts = [];
+    PRICE_RANGES.forEach(range => {
+        KOTA_LIST.forEach(k => {
+            const pct = kotaTotals[k] > 0 ? (mx[range][k] / kotaTotals[k]) * 100 : 0;
+            if (pct > 0) allPcts.push(pct);
+        });
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + mx[range][k], 0);
+        const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
+        if (rowPct > 0) allPcts.push(rowPct);
+    });
+    const maxPct = allPcts.length > 0 ? Math.max(...allPcts) : 1;
+
+    function pctBgStyle(pct) {
+        if (pct <= 0) return '';
+        const intensity = (pct / maxPct) * 0.4;
+        return ` style="background-color: rgba(16, 185, 129, ${intensity.toFixed(3)})"`;
+    }
+
+    // HEAD
+    const head = document.getElementById('monthlyTableHeadHargaKota');
+    head.innerHTML = `
+        <tr class="ms-head-1">
+            <th rowspan="2" class="ms-bulan">Range Harga</th>
+            ${KOTA_LIST.map(k => `<th colspan="2" class="ms-kota-header">${k}</th>`).join('')}
+            <th colspan="2" class="ms-total ms-total-center">TOTAL</th>
+        </tr>
+        <tr class="ms-head-2">
+            ${KOTA_LIST.map(() => `<th>QTY</th><th>%</th>`).join('')}
+            <th>QTY</th><th>%</th>
+        </tr>
+    `;
+
+    // BODY
+    const body = document.getElementById('monthlyTableBodyHargaKota');
+    let bodyHtml = '';
+
+    PRICE_RANGES.forEach(range => {
+        const rowTotal = KOTA_LIST.reduce((s, k) => s + mx[range][k], 0);
+        const rowPct = grandTotal > 0 ? (rowTotal / grandTotal) * 100 : 0;
+
+        bodyHtml += `<tr>`;
+        bodyHtml += `<td class="ms-bulan-cell"><strong>${escapeHtml(range)}</strong></td>`;
+
+        KOTA_LIST.forEach(k => {
+            const qty = mx[range][k];
+            const pct = kotaTotals[k] > 0 ? (qty / kotaTotals[k]) * 100 : 0;
+            bodyHtml += `<td class="ms-qty">${formatNumber(qty)}</td>`;
+            bodyHtml += `<td class="ms-pct-white"${pctBgStyle(pct)}>${pct > 0 ? pct.toFixed(1) + '%' : '-'}</td>`;
+        });
+
+        // Total column
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(rowTotal)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"${pctBgStyle(rowPct)}><strong>${rowPct.toFixed(1)}%</strong></td>`;
+        bodyHtml += `</tr>`;
+    });
+
+    // Grand Total row
+    bodyHtml += `<tr class="ms-grand-row">`;
+    bodyHtml += `<td><strong>Total</strong></td>`;
+    KOTA_LIST.forEach(k => {
+        const qty = kotaTotals[k];
+        bodyHtml += `<td class="ms-qty"><strong>${formatNumber(qty)}</strong></td>`;
+        bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    });
+    bodyHtml += `<td class="ms-qty"><strong>${formatNumber(grandTotal)}</strong></td>`;
+    bodyHtml += `<td class="ms-pct-white"><strong>100%</strong></td>`;
+    bodyHtml += `</tr>`;
+
+    body.innerHTML = bodyHtml;
+
+    // FOOTER (empty)
+    const foot = document.getElementById('monthlyTableFootHargaKota');
     foot.innerHTML = '';
 }
 
