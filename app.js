@@ -2424,36 +2424,40 @@ function renderMonthlyBrandTable(config) {
 }
 
 function renderMonthlyHargaBrandTable(bulan, tahun) {
-    const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
-    const LAINNYA = 'Lainnya';
-
     const infoEl = document.getElementById('monthlyInfoHargaBrand');
     infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Brand`;
 
     const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
 
-    // Build matrix: priceRange x brand (including Lainnya catch-all)
+    // Collect all unique price ranges from data (no Lainnya grouping)
+    const rangeSet = new Set();
+    data.forEach(d => { if (d.cekHargaNon) rangeSet.add(d.cekHargaNon); });
+
+    // Sort: known ranges first in logical order, then any others alphabetically
+    const KNOWN_ORDER = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+    const displayRanges = [...rangeSet].sort((a, b) => {
+        const ai = KNOWN_ORDER.indexOf(a);
+        const bi = KNOWN_ORDER.indexOf(b);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    // Build matrix: priceRange x brand
     const mx = {};
-    PRICE_RANGES.forEach(r => {
+    displayRanges.forEach(r => {
         mx[r] = {};
         BRAND_LIST.forEach(b => mx[r][b] = 0);
     });
-    mx[LAINNYA] = {};
-    BRAND_LIST.forEach(b => mx[LAINNYA][b] = 0);
 
     data.forEach(d => {
         const b = getBrandGroup(d.brand);
         const r = d.cekHargaNon;
         if (mx[r] && mx[r][b] !== undefined) {
             mx[r][b] += d.qty;
-        } else if (r && mx[LAINNYA][b] !== undefined) {
-            mx[LAINNYA][b] += d.qty;
         }
     });
-
-    // Determine display ranges (include Lainnya only if it has data)
-    const lainnyaTotal = BRAND_LIST.reduce((s, b) => s + mx[LAINNYA][b], 0);
-    const displayRanges = lainnyaTotal > 0 ? [...PRICE_RANGES, LAINNYA] : [...PRICE_RANGES];
 
     // Totals per brand
     const brandTotals = {};
@@ -2539,36 +2543,40 @@ function renderMonthlyHargaBrandTable(bulan, tahun) {
 }
 
 function renderMonthlyHargaKotaTable(bulan, tahun) {
-    const PRICE_RANGES = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
-    const LAINNYA = 'Lainnya';
-
     const infoEl = document.getElementById('monthlyInfoHargaKota');
     infoEl.innerHTML = `<strong>${bulan} ${tahun}</strong> · Distribusi Range Harga per Kota`;
 
     const data = allData.filter(d => d.tahun === tahun && d.bulanName === bulan && (currentMonthlyCategory === 'all' || d.cekGaming === currentMonthlyCategory));
 
-    // Build matrix: priceRange x kota (including Lainnya catch-all)
+    // Collect all unique price ranges from data (no Lainnya grouping)
+    const rangeSet = new Set();
+    data.forEach(d => { if (d.cekHargaNon) rangeSet.add(d.cekHargaNon); });
+
+    // Sort: known ranges first in logical order, then any others alphabetically
+    const KNOWN_ORDER = ['Dibawah 5 Juta', '5 Juta - 10 Juta', '10 Juta - 15 Juta', '15 Juta - 20 Juta', 'Diatas 20 Juta'];
+    const displayRanges = [...rangeSet].sort((a, b) => {
+        const ai = KNOWN_ORDER.indexOf(a);
+        const bi = KNOWN_ORDER.indexOf(b);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    // Build matrix: priceRange x kota
     const mx = {};
-    PRICE_RANGES.forEach(r => {
+    displayRanges.forEach(r => {
         mx[r] = {};
         KOTA_LIST.forEach(k => mx[r][k] = 0);
     });
-    mx[LAINNYA] = {};
-    KOTA_LIST.forEach(k => mx[LAINNYA][k] = 0);
 
     data.forEach(d => {
         const k = d.cekKota;
         const r = d.cekHargaNon;
         if (mx[r] && KOTA_LIST.includes(k)) {
             mx[r][k] += d.qty;
-        } else if (r && !PRICE_RANGES.includes(r) && KOTA_LIST.includes(k)) {
-            mx[LAINNYA][k] += d.qty;
         }
     });
-
-    // Determine display ranges (include Lainnya only if it has data)
-    const lainnyaTotal = KOTA_LIST.reduce((s, k) => s + mx[LAINNYA][k], 0);
-    const displayRanges = lainnyaTotal > 0 ? [...PRICE_RANGES, LAINNYA] : [...PRICE_RANGES];
 
     // Totals per kota
     const kotaTotals = {};
