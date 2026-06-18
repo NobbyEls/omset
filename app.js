@@ -958,7 +958,7 @@ function renderGamingChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
+            interaction: { intersect: true, mode: 'nearest' },
             cutout: '65%',
             layout: { padding: 30 },
             plugins: {
@@ -1009,7 +1009,7 @@ function renderProcChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
+            interaction: { intersect: true, mode: 'nearest' },
             cutout: '65%',
             layout: { padding: 30 },
             plugins: {
@@ -1049,7 +1049,7 @@ function renderDivisiChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
+            interaction: { intersect: true, mode: 'nearest' },
             cutout: '65%',
             layout: { padding: 30 },
             plugins: {
@@ -1096,8 +1096,8 @@ function renderSalesChart() {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index', axis: 'y' },
-            hover: { intersect: false, mode: 'index', axis: 'y' },
+            interaction: { intersect: true, mode: 'nearest', axis: 'y' },
+            hover: { intersect: true, mode: 'nearest', axis: 'y' },
             plugins: {
                 legend: { display: false },
                 tooltip: { callbacks: { label: ctx => formatJutaSmart(ctx.raw) } }
@@ -1200,8 +1200,8 @@ function renderTopProductsChart() {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index', axis: 'y' },
-            hover: { intersect: false, mode: 'index', axis: 'y' },
+            interaction: { intersect: true, mode: 'nearest', axis: 'y' },
+            hover: { intersect: true, mode: 'nearest', axis: 'y' },
             plugins: { legend: { display: false } },
             scales: {
                 x: { beginAtZero: true, grid: { color: gridColor() } },
