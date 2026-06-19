@@ -717,24 +717,77 @@ function renderTrendChart() {
     const years = Object.keys(yearMonths).sort();
     const labels = MONTH_NAMES;
 
+    // Detect the running (incomplete) month in the latest year for estimation
+    const latestYear = years.length ? Math.max(...years.map(Number)) : 0;
+    let runningMonthIdx = -1;
+    let monthMaxDay = 0;
+    if (latestYear && yearMonths[latestYear]) {
+        // Find max transaction day per month in the latest year
+        const latestYearRows = filteredDataAllYears.filter(d => d.tahun === latestYear);
+        const maxDayPerMonth = {};
+        MONTH_NAMES.forEach(m => maxDayPerMonth[m] = 0);
+        latestYearRows.forEach(d => {
+            const dayNum = parseInt(String(d.tgl).split(' ')[0]);
+            if (!isNaN(dayNum) && dayNum > 0 && dayNum > maxDayPerMonth[d.bulanName]) {
+                maxDayPerMonth[d.bulanName] = dayNum;
+            }
+        });
+        // The running month is the latest month whose maxDay < total days in month
+        MONTH_NAMES.forEach((m, idx) => {
+            if (maxDayPerMonth[m] > 0) {
+                const totalDays = daysInMonth(idx, latestYear);
+                if (maxDayPerMonth[m] < totalDays) {
+                    runningMonthIdx = idx;
+                    monthMaxDay = maxDayPerMonth[m];
+                }
+            }
+        });
+    }
+
     // Keep the subtitle in sync with the selected metric
     const subEl = document.getElementById('trendSubtitle');
     if (subEl) {
-        subEl.textContent = (isValue
+        let subtitle = (isValue
             ? 'Perbandingan total omset (Juta IDR) per bulan: '
             : 'Perbandingan unit terjual per bulan: ') + years.join(' vs ');
+        if (runningMonthIdx >= 0) {
+            subtitle += ` · <em>${MONTH_NAMES[runningMonthIdx]}: estimasi closing</em>`;
+        }
+        subEl.innerHTML = subtitle;
     }
 
     const datasets = [];
     years.forEach((year, idx) => {
         const color = YEAR_COLORS[year] || COLORS[idx % COLORS.length];
+        const isLatest = Number(year) === latestYear;
+
+        // Build data points; estimate the running month for the latest year
+        const dataPoints = labels.map((m, mIdx) => {
+            const cell = yearMonths[year][m];
+            if (!cell) return null;
+            let val = isValue ? cell.revenue / 1000000 : cell.qty;
+            // Apply estimation for the running month in the latest year
+            if (isLatest && mIdx === runningMonthIdx && monthMaxDay > 0) {
+                const totalDays = daysInMonth(mIdx, latestYear);
+                val = (val / monthMaxDay) * totalDays;
+                if (!isValue) val = Math.round(val);
+            }
+            return val;
+        });
+
+        // Mark the running month point with a different style (dashed segment)
+        const pointRadius = labels.map((m, mIdx) => {
+            if (isLatest && mIdx === runningMonthIdx) return 7;
+            return 4;
+        });
+        const pointStyle = labels.map((m, mIdx) => {
+            if (isLatest && mIdx === runningMonthIdx) return 'rectRot'; // diamond shape for estimated
+            return 'circle';
+        });
+
         datasets.push({
             label: `${year} - ${isValue ? 'Value' : 'Unit'}`,
-            data: labels.map(m => {
-                const cell = yearMonths[year][m];
-                if (!cell) return null;
-                return isValue ? cell.revenue / 1000000 : cell.qty;
-            }),
+            data: dataPoints,
             borderColor: color,
             backgroundColor: 'transparent',
             yAxisID: 'y',
@@ -744,8 +797,9 @@ function renderTrendChart() {
             pointBackgroundColor: color,
             pointBorderColor: '#fff',
             pointBorderWidth: 2,
-            pointRadius: 4,
+            pointRadius: pointRadius,
             pointHoverRadius: 7,
+            pointStyle: pointStyle,
             spanGaps: true
         });
     });
@@ -763,9 +817,15 @@ function renderTrendChart() {
                     callbacks: {
                         label: ctx => {
                             if (ctx.parsed.y == null) return `${ctx.dataset.label}: -`;
-                            return `${ctx.dataset.label}: ` + (isValue
+                            const val = isValue
                                 ? formatJutaSmart(ctx.parsed.y)
-                                : formatNumber(ctx.parsed.y) + ' unit');
+                                : formatNumber(Math.round(ctx.parsed.y)) + ' unit';
+                            // Indicate estimation for the running month
+                            const yearNum = Number(ctx.dataset.label.split(' ')[0]);
+                            if (yearNum === latestYear && ctx.dataIndex === runningMonthIdx) {
+                                return `${ctx.dataset.label}: ${val} (est. closing)`;
+                            }
+                            return `${ctx.dataset.label}: ${val}`;
                         }
                     }
                 }
