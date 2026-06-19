@@ -699,8 +699,6 @@ function makeBarChart(canvasId, labels, data, label, colors, opts = {}) {
 }
 
 function renderTrendChart() {
-    destroyChart('trend');
-
     const isValue = currentTrendMetric === 'value';
 
     // Group by year+month for trend - separate dataset per year.
@@ -812,6 +810,26 @@ function renderTrendChart() {
         });
     });
 
+    // --- Smooth update: reuse existing chart instance when possible ---
+    const trendTransition = {
+        duration: 1200,
+        easing: 'easeOutQuart'
+    };
+
+    if (charts.trend) {
+        // Update data in-place → Chart.js animates points to new positions
+        charts.trend.data.labels = labels;
+        charts.trend.data.datasets = datasets;
+        charts.trend.options.scales.y.title.text = isValue ? 'Revenue (Juta IDR)' : 'Unit Terjual';
+        charts.trend.options.scales.y.ticks = isValue ? { callback: v => formatJutaAxis(v) } : {};
+        charts.trend.update({
+            duration: 1200,
+            easing: 'easeOutQuart'
+        });
+        return;
+    }
+
+    // First render — create the chart
     charts.trend = new Chart(document.getElementById('chartTrend'), {
         type: 'line',
         data: { labels, datasets },
@@ -819,27 +837,10 @@ function renderTrendChart() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
-            animation: {
-                duration: 1200,
-                easing: 'easeInOutQuart',
-                delay: (ctx) => ctx.dataIndex * 60 + ctx.datasetIndex * 150
-            },
+            animation: trendTransition,
             transitions: {
                 active: {
                     animation: { duration: 300, easing: 'easeOutCubic' }
-                },
-                resize: {
-                    animation: { duration: 400, easing: 'easeOutCubic' }
-                },
-                show: {
-                    animations: {
-                        x: { from: 0 },
-                        y: { from: (ctx) => ctx.chart.scales.y.getPixelForValue(0) }
-                    },
-                    animation: { duration: 800, easing: 'easeOutCubic' }
-                },
-                hide: {
-                    animation: { duration: 400, easing: 'easeInCubic' }
                 }
             },
             plugins: {
