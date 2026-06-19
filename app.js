@@ -822,6 +822,9 @@ function renderTrendChart() {
         charts.trend.data.datasets = datasets;
         charts.trend.options.scales.y.title.text = isValue ? 'Revenue (Juta IDR)' : 'Unit Terjual';
         charts.trend.options.scales.y.ticks = isValue ? { callback: v => formatJutaAxis(v) } : {};
+        // Store estimation state for tooltip access
+        charts.trend._trendLatestYear = latestYear;
+        charts.trend._trendRunningIdx = runningMonthIdx;
         charts.trend.update({
             duration: 1200,
             easing: 'easeOutQuart'
@@ -849,12 +852,14 @@ function renderTrendChart() {
                     callbacks: {
                         label: ctx => {
                             if (ctx.parsed.y == null) return `${ctx.dataset.label}: -`;
-                            const val = isValue
+                            const isVal = currentTrendMetric === 'value';
+                            const val = isVal
                                 ? formatJutaSmart(ctx.parsed.y)
                                 : formatNumber(Math.round(ctx.parsed.y)) + ' unit';
                             // Indicate estimation for the running month
-                            const yearNum = Number(ctx.dataset.label.split(' ')[0]);
-                            if (yearNum === latestYear && ctx.dataIndex === runningMonthIdx) {
+                            const ly = ctx.chart._trendLatestYear || 0;
+                            const ri = ctx.chart._trendRunningIdx ?? -1;
+                            if (ctx.dataset.label.includes(String(ly)) && ctx.dataIndex === ri) {
                                 return `${ctx.dataset.label}: ${val} (est. closing)`;
                             }
                             return `${ctx.dataset.label}: ${val}`;
@@ -873,6 +878,9 @@ function renderTrendChart() {
             }
         }
     });
+    // Store estimation state for tooltip access
+    charts.trend._trendLatestYear = latestYear;
+    charts.trend._trendRunningIdx = runningMonthIdx;
 }
 
 function renderYoYRevenueChart() {
