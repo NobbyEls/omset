@@ -789,10 +789,18 @@ function renderTrendChart() {
             label: `${year} - ${isValue ? 'Value' : 'Unit'}`,
             data: dataPoints,
             borderColor: color,
-            backgroundColor: 'transparent',
+            backgroundColor: (ctx) => {
+                const chart = ctx.chart;
+                const { ctx: c, chartArea } = chart;
+                if (!chartArea) return color + '33';
+                const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, color + '55');
+                gradient.addColorStop(1, color + '00');
+                return gradient;
+            },
             yAxisID: 'y',
             tension: 0.4,
-            fill: false,
+            fill: true,
             borderWidth: 2.5,
             pointBackgroundColor: color,
             pointBorderColor: '#fff',
@@ -811,6 +819,29 @@ function renderTrendChart() {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
+            animation: {
+                duration: 1200,
+                easing: 'easeInOutQuart',
+                delay: (ctx) => ctx.dataIndex * 60 + ctx.datasetIndex * 150
+            },
+            transitions: {
+                active: {
+                    animation: { duration: 300, easing: 'easeOutCubic' }
+                },
+                resize: {
+                    animation: { duration: 400, easing: 'easeOutCubic' }
+                },
+                show: {
+                    animations: {
+                        x: { from: 0 },
+                        y: { from: (ctx) => ctx.chart.scales.y.getPixelForValue(0) }
+                    },
+                    animation: { duration: 800, easing: 'easeOutCubic' }
+                },
+                hide: {
+                    animation: { duration: 400, easing: 'easeInCubic' }
+                }
+            },
             plugins: {
                 legend: { position: 'top', align: 'end' },
                 tooltip: {
